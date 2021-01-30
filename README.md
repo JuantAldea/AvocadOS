@@ -1,1 +1,1 @@
-# some_kernel
+# AvocadOS
