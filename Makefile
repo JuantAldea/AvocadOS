@@ -7,11 +7,14 @@ CFLAGS = -g -ffreestanding -falign-jumps -falign-functions -falign-labels -falig
 	-nostdlib -nostartfiles -nodefaultlibs \
 	-Wall -Wextra -Werror -O0 -Iinc
 
-all: bin/boot.bin bin/kernel.bin
+all: folders bin/boot.bin bin/kernel.bin
 	dd if=bin/boot.bin > bin/os.bin
 	dd if=bin/kernel.bin >> bin/os.bin
 	# padding and safe space all that
 	dd if=/dev/zero bs=512 count=100 >> bin/os.bin
+
+folders:
+	mkdir -p bin build
 
 bin/boot.bin: src/boot/boot.asm
 	nasm -f bin src/boot/boot.asm -o bin/boot.bin
@@ -29,7 +32,7 @@ build/kernel.o: src/kernel.c
 run: all
 	qemu-system-x86_64 -hda bin/os.bin
 
-gdb:
+gdb: all
 	gdb \
 	-ex "set confirm off" \
     -ex "add-symbol-file build/kernelfull.o 0x0100000 " \
