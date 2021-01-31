@@ -28,3 +28,11 @@ _start_kernel:
     out 0x92, al
 
     jmp $
+
+
+; C compiler requires functions to be aligned to 16 bytes
+; To ensure this assmebly does not destroy their alignment, as this piece of code
+; is located at the begining of the bin file, in the .text section, we pad this to 
+; 512 bytes
+; 512 % 16 == 0
+times 512 - ($ - $$) db 0;
