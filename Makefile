@@ -29,6 +29,13 @@ build/kernel.o: src/kernel.c
 run: all
 	qemu-system-x86_64 -hda bin/os.bin
 
+gdb:
+	gdb \
+	-ex "set confirm off" \
+    -ex "add-symbol-file build/kernelfull.o 0x0100000 " \
+    -ex "target remote |qemu-system-x86_64 -S -gdb stdio -hda bin/os.bin" \
+    -ex "break kernel_main"
+
 clean:
 	rm -rf bin/*
 	rm -rf build/*
