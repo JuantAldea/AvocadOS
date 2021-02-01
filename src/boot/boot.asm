@@ -1,7 +1,8 @@
 ; http://www.ctyme.com/rbrown.htm
-ORG 0x7c00
+;ORG 0x7c00
 BITS 16 ; 16 bit code (for the assembler)
-
+global mul_label
+global _start
 CODE_SEG equ gdt_code - gdt_start
 DATA_SEG equ gdt_data - gdt_start
 
@@ -76,7 +77,7 @@ start:
 load32:
     mov eax, 1 ; sector 0 is the boot sector, we want to load from sector 1
     mov ecx, 100 ; 100 sectors
-    mov edi, KERNEL_32_BUFFER 
+    mov edi, KERNEL_32_BUFFER
     call ata_lba_read
     jmp CODE_SEG:KERNEL_32_BUFFER
 
@@ -133,23 +134,20 @@ ata_lba_read:
     mov al, 0x20 ; read command
     out dx, al
 
-    .wait:
-        ; mov edx, 0x01F7 ; command register port ; Poll port 
+    mov ebx, ecx ; store in ebx the number of sectors to read
+
+    .wait_for_more:
+        mov edx, 0x1F7 ; command register port ; Poll port
         in al, dx
         test al, 8
-        jz .wait
+        jz .wait_for_more
 
-    ; read sector 256 words (1 sector -> 512 bits)
-    
-    mov eax, 256 ; 256 words (16 bit) in one sector
-    mul ecx ; multiplied by the number of sectors
-    ; GOTCHA mul will smash EDX due to the size of its operands
-    ; check for overlow? NAH
-    mov ecx, eax ; tell REP INS that we want to read 256 * number_sectors
-    ; mov edi, addr ; tell REP INS where to write -> edi was set before
-    mov edx, 0x01F0 ; data port
+    mov edx, 0x1F0 ; data port
+    mov ecx, 256
     rep insw ; I/O
-    
+    dec ebx
+    jnz .wait_for_more
+
     pop edi
     pop ecx
     pop edx

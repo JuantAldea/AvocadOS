@@ -17,14 +17,17 @@ folders:
 	mkdir -p bin build
 
 bin/boot.bin: src/boot/boot.asm
-	nasm -f bin src/boot/boot.asm -o bin/boot.bin
+	# generate with debug symbols, then extract the binary
+	nasm -f elf -g -F dwarf src/boot/boot.asm -o build/boot.elf
+	i686-elf-ld -Ttext 0x7C00 build/boot.elf -o build/boot.o
+	objcopy -O binary build/boot.o bin/boot.bin
 
 bin/kernel.bin: $(FILES)
 	i686-elf-ld -g -relocatable $(FILES) -o build/kernelfull.o
 	i686-elf-gcc $(CFLAGS) -T src/linker.ld -o bin/kernel.bin -ffreestanding -O0 -nostdlib build/kernelfull.o
 
 build/kernel.asm.o: src/kernel.asm
-	nasm -f elf -g src/kernel.asm -o build/kernel.asm.o
+	nasm -f elf -g -F dwarf src/kernel.asm -o build/kernel.asm.o
 
 build/kernel.o: src/kernel.c
 	i686-elf-gcc $(INCLUDES) $(CFLAGS) -std=gnu99 -c ./src/kernel.c -o ./build/kernel.o 
@@ -35,7 +38,8 @@ run: all
 gdb: all
 	gdb \
 	-ex "set confirm off" \
-    -ex "add-symbol-file build/kernelfull.o 0x0100000 " \
+    -ex "add-symbol-file build/boot.o 0x7c00 " \
+	-ex "add-symbol-file build/kernelfull.o 0x0100000 " \
     -ex "target remote |qemu-system-x86_64 -S -gdb stdio -hda bin/os.bin" \
     -ex "break kernel_main"
 
