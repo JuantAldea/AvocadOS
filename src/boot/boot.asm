@@ -142,6 +142,7 @@ ata_lba_read:
         test al, 8
         jz .wait_for_more
 
+
     mov edx, 0x1F0 ; data port
     mov ecx, 256
     rep insw ; I/O

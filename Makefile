@@ -1,7 +1,7 @@
 FILES = build/kernel.asm.o build/kernel.o
 INCLUDES = -Isrc
 
-CFLAGS = -g -ffreestanding -falign-jumps -falign-functions -falign-labels -falign-loops \
+CFLAGS = -ggdb3 -ffreestanding -falign-jumps -falign-functions -falign-labels -falign-loops \
 	-fstrength-reduce -fomit-frame-pointer -finline-functions -Wno-unused-function \
 	-fno-builtin -Wno-unused-label -Wno-cpp -Wno-unused-parameter \
 	-nostdlib -nostartfiles -nodefaultlibs \
@@ -23,7 +23,7 @@ bin/boot.bin: src/boot/boot.asm
 	objcopy -O binary build/boot.o bin/boot.bin
 
 bin/kernel.bin: $(FILES)
-	i686-elf-ld -g -relocatable $(FILES) -o build/kernelfull.o
+	i686-elf-ld -ggg -relocatable $(FILES) -o build/kernelfull.o
 	i686-elf-gcc $(CFLAGS) -T src/linker.ld -o bin/kernel.bin -ffreestanding -O0 -nostdlib build/kernelfull.o
 
 build/kernel.asm.o: src/kernel.asm
