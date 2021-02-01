@@ -1,7 +1,7 @@
 ; http://www.ctyme.com/rbrown.htm
-;ORG 0x7c00
+; ORG 0x7c00 ; commented out because we are generating an ELF file to get debug symbols. See Makefile
 BITS 16 ; 16 bit code (for the assembler)
-global mul_label
+
 global _start
 CODE_SEG equ gdt_code - gdt_start
 DATA_SEG equ gdt_data - gdt_start
@@ -13,8 +13,8 @@ KERNEL_32_BUFFER equ 0x0100000 ; 1MB
 _start:
     jmp short init_code_segment
     nop
-; filler, as the BIOS might write the BPB into this section.
-times 33 db 0
+
+times 33 db 0 ; filler, as the BIOS might write its BPB into this section.
 
 ; GDT
 gdt_start:
@@ -31,7 +31,7 @@ gdt_code:       ; CS should point to this
     db 11001111b ; high & low 4 bit  fags
     db 0x0       ; base 24-31
 
-;offset 0x10
+; offset 0x10
 gdt_data:       ; ds, ss, es, fs, gs
     dw 0xffff   ; segment limit 0-15
     dw 0x0      ; base 0-15 bits
@@ -158,7 +158,7 @@ ata_lba_read:
     ret
 
 times 510 - ($ - $$) db 0 ; fill 510 bytes as 0 (510 - (current_addr - begin)))
-
+; 510 instead of 512 because the last two store the boot signature
 dw 0xAA55; (little endian, 0x055AA is the boot signature)
 
-; BIOS wont load anthing from here, as it loads only 512 bytes
+; BIOS wont load anthing from here, as it only loads 512 bytes

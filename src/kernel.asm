@@ -34,7 +34,7 @@ _start_kernel:
 
 ; C compiler requires functions to be aligned to 16 bytes
 ; To ensure this assmebly does not destroy their alignment, as this piece of code
-; is located at the begining of the bin file, in the .text section, we pad this to 
-; 512 bytes
+; is located at the begining of the bin file, in the .text section, we pad this to
+; 512 bytes, hence preserving the 16 byte aligment of whatever comes after.
 ; 512 % 16 == 0
 times 512 - ($ - $$) db 0;
