@@ -88,7 +88,7 @@ load32:
 ata_lba_read:
     ; mode 28 bit PIO  -> https://wiki.osdev.org/ATA_PIO_Mode
     pushfd
-    and eax, 0x0FFFFFFF ; trucate to 28 bit
+    and eax, 0x0FFFFFFF ; trucate to 28 bits
     push eax
     push ebx
     push edx
@@ -99,8 +99,8 @@ ata_lba_read:
 
     ; TODO: can this consecutive ports be treated at a single one?
 
-    ; send high 8 bits of the LBA to HD controller
-    ; OR'd with the drive
+    ; send high 8 bits of the LBA to HD controller OR'd with the drive
+    ; which right now is hardcoded (0xE0) to the MASTER drive
     mov edx, 0x01F6 ; select port
     shr eax, 24 ; shift right 24 -> get bytes 24-27 to AL
     or al, 0xE0 ; select Master drive
@@ -136,18 +136,26 @@ ata_lba_read:
 
     mov ebx, ecx ; store in ebx the number of sectors to read
 
-    .wait_for_more:
+    ; a 400ns wait is needed https://wiki.osdev.org/ATA_PIO_Mode#400ns_delays
+    .read_next:
+    .wait:
         mov edx, 0x1F7 ; command register port ; Poll port
-        in al, dx
-        test al, 8
-        jz .wait_for_more
-
+        in al, dx ; get status byte
+        test al, 0x80 ; test for BSY bit
+        jnz short .wait
+        test al, 0x8 ; test for DRQ bit, if set we are good to go
+    .retry:
+        jz short .wait
 
     mov edx, 0x1F0 ; data port
     mov ecx, 256
     rep insw ; I/O
+    in al, dx		; delay 400ns to allow drive to set new values of BSY and DRQ
+    in al, dx
+    in al, dx
+    in al, dx
     dec ebx
-    jnz .wait_for_more
+    jnz short .read_next
 
     pop edi
     pop ecx
