@@ -1,6 +1,6 @@
 [BITS 32]
 global _start_kernel ; export symbol
-
+global problem
 extern kernel_main ; "forward-declaration" of kernel-start (kernel.c)
 
 CODE_SEG equ 0x08

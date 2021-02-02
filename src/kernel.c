@@ -1,5 +1,6 @@
 #include "kernel.h"
-#include "termio.h"
+#include "termio/termio.h"
+#include "idt/idt.h"
 
 void kernel_splash()
 {
@@ -11,10 +12,23 @@ void kernel_splash()
     terminal_put_str("               \\_/ \\_/ \\_/  \\___/  \\___|\\__,_| \\__,_|\\___/  \\__/\n", 2);
 }
 
-void kernel_main(void)
+void test_div0()
 {
+    volatile int a = 0;
+    volatile int b = a / a;
+    (void)b;
+}
+
+void kernel_main(void){
     terminal_initialize();
+    //print("Starting...");
+
+    idt_init();
+
+    // done
     kernel_splash();
+    //test_div0();
+
 
 trap:
     goto trap;

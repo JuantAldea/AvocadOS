@@ -1,8 +1,8 @@
-FILES = build/kernel.asm.o build/kernel.o
+FILES = build/kernel.asm.o build/kernel.o build/idt/idt.asm.o build/idt/idt.o build/memory/memory.o build/termio/termio.o
 INCLUDES = -Isrc
 
 CFLAGS = -ggdb3 -ffreestanding -falign-jumps -falign-functions -falign-labels -falign-loops \
-	-fstrength-reduce -fomit-frame-pointer -finline-functions -Wno-unused-function \
+	-fstrength-reduce -fno-omit-frame-pointer -finline-functions -Wno-unused-function \
 	-fno-builtin -Wno-unused-label -Wno-cpp -Wno-unused-parameter \
 	-nostdlib -nostartfiles -nodefaultlibs \
 	-Wall -Wextra -Werror -O0 -Iinc
@@ -14,7 +14,7 @@ all: folders bin/boot.bin bin/kernel.bin
 	dd if=/dev/zero bs=512 count=100 >> bin/os.bin
 
 folders:
-	mkdir -p bin build
+	mkdir -p bin build build/idt build/memory build/termio
 
 bin/boot.bin: src/boot/boot.asm
 	# generate with debug symbols, then extract the binary
@@ -30,7 +30,20 @@ build/kernel.asm.o: src/kernel.asm
 	nasm -f elf -g -F dwarf src/kernel.asm -o build/kernel.asm.o
 
 build/kernel.o: src/kernel.c
-	i686-elf-gcc $(INCLUDES) $(CFLAGS) -std=gnu99 -c ./src/kernel.c -o ./build/kernel.o 
+	i686-elf-gcc $(INCLUDES) $(CFLAGS) -std=gnu99 -c src/kernel.c -o build/kernel.o
+
+build/idt/idt.asm.o: src/idt/idt.asm
+	nasm -f elf -g -F dwarf src/idt/idt.asm -o build/idt/idt.asm.o
+
+build/idt/idt.o: src/idt/idt.c
+	i686-elf-gcc $(INCLUDES) -Isrc/idt $(CFLAGS) -std=gnu99 -c src/idt/idt.c -o build/idt/idt.o
+
+build/memory/memory.o: src/memory/memory.c
+	i686-elf-gcc $(INCLUDES) -Isrc/memory $(CFLAGS) -std=gnu99 -c src/memory/memory.c -o build/memory/memory.o
+
+build/termio/termio.o: src/termio/termio.c
+	i686-elf-gcc $(INCLUDES) -Isrc/termio $(CFLAGS) -std=gnu99 -c src/termio/termio.c -o build/termio/termio.o
+
 
 run: all
 	qemu-system-x86_64 -hda bin/os.bin

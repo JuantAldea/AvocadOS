@@ -1,21 +1,9 @@
-#define VGA_WIDTH 80
-#define VGA_HEIGHT 25
 
-#include <stdint.h>
-#include <stddef.h>
+#include "termio.h"
 
-volatile uint16_t *video_memory = 0;
-uint16_t terminal_row = 0;
-uint16_t terminal_column = 0;
-
-void terminal_put_char(const uint8_t character, uint8_t colour);
-uint16_t terminal_make_char(const char c, const char colour);
-
-size_t strlen(const char  * str);
-void terminal_print_char_x_y(const uint16_t character, const uint16_t x, const uint16_t y);
-void terminal_print_string_x_y(const char *str, const char colour, const uint8_t x, const uint8_t y);
-void terminal_put_str(const char *str, const char colour);
-void terminal_initialize ()  __attribute__((constructor));
+static uint16_t *video_memory = 0;
+static uint16_t terminal_row = 0;
+static uint16_t terminal_column = 0;
 
 uint16_t terminal_make_char(const char c, const char colour)
 {
