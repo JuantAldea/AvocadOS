@@ -16,9 +16,9 @@ all: folders bin/boot.bin bin/kernel.bin
 folders:
 	mkdir -p bin build build/idt build/memory build/termio
 
-bin/boot.bin: src/boot/boot.asm
+bin/boot.bin: src/boot/*
 	# generate with debug symbols, then extract the binary
-	nasm -f elf -g -F dwarf src/boot/boot.asm -o build/boot.elf
+	nasm -i src/boot/ -f elf -g -F dwarf src/boot/boot.asm -o build/boot.elf
 	i686-elf-ld -Ttext 0x7C00 build/boot.elf -o build/boot.o
 	objcopy -O binary build/boot.o bin/boot.bin
 
