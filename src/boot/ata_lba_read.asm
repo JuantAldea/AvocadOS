@@ -12,7 +12,6 @@ ata_lba_read:
     push edi
 
     mov ebx, eax ; backup LBA to EBX
-    ;mov esi, ecx ; backup sector count to ESI
     ; TODO: can this consecutive ports be treated at a single one?
 
     ; send high 8 bits of the LBA to HD controller OR'd with the drive
@@ -64,13 +63,12 @@ ata_lba_read:
         jz short .wait
 
     mov edx, 0x1F0 ; data port
-    mov ecx, 255
+    mov ecx, 256
     rep insw ; I/O
-    in al, dx		; delay 400ns to allow drive to set new values of BSY and DRQ
+    in al, dx	 	; delay 400ns to allow drive to set new values of BSY and DRQ
     in al, dx
     in al, dx
     in al, dx
-    .dec_ebx:
     dec ebx
     jnz short .read_next
 
