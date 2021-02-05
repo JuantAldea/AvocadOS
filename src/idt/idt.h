@@ -33,5 +33,13 @@ struct idtr_desc
 
 
 void idt_init();
+void enable_interrupts();
+void disable_interrupts();
+extern void generate_int_0x0();
+extern void generate_int_0x1();
+extern void generate_int_0x2();
+extern void generate_int_0x3();
+extern void generate_int_0x20();
+extern void generate_int_0x21();
 
 #endif /* __IDT_H*/
