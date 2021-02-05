@@ -1,10 +1,8 @@
 ; http://www.ctyme.com/rbrown.htm
 ; ORG 0x7c00 ; commented out because we are generating an ELF file to get debug symbols. See Makefile
-BITS 16 ; 16 bit code (for the assembler)
+[BITS 16] ; 16 bit code (for the assembler)
 
-global _start
-CODE_SEG equ gdt_code - gdt_start
-DATA_SEG equ gdt_data - gdt_start
+[global _start]
 
 KERNEL_32_BUFFER equ 0x0100000 ; 1MB
 
@@ -16,37 +14,14 @@ _start:
 
 times 33 db 0 ; filler, as the BIOS might write its BPB into this section.
 
-; GDT
-gdt_start:
-gdt_null:
+%include "gdt.inc"
+
+idt_descriptor:
+    dw 0x0
     dd 0x0
-    dd 0x0
-
-; offset 0x8
-gdt_code:       ; CS should point to this
-    dw 0xffff   ; segment limit 0-15
-    dw 0x0      ; base 0-15 bits
-    db 0x0      ; base 16-23
-    db 0x9a     ; access byte
-    db 11001111b ; high & low 4 bit  fags
-    db 0x0       ; base 24-31
-
-; offset 0x10
-gdt_data:       ; ds, ss, es, fs, gs
-    dw 0xffff   ; segment limit 0-15
-    dw 0x0      ; base 0-15 bits
-    db 0x0      ; base 16-23
-    db 0x92     ; access byte
-    db 11001111b ; high & low 4 bit  fags
-    db 0x0       ; base 24-31
-
-gdt_end:
-
-gdt_descriptor:
-    dw gdt_end - gdt_start - 1 ; length of the descriptor
-    dd gdt_start    ; address of the descriptor
 
 init_code_segment:
+    cli ; int off
     ; The (legacy) BIOS checks bootable devices for a boot signature, a so called magic number
     ; The boot signature is in a boot sector (sector number 0) and it contains the byte sequence
     ; 0x55, 0xAA at byte offsets 510 and 511 respectively. When the BIOS finds such a boot sector,
@@ -54,117 +29,50 @@ init_code_segment:
     ; However, some BIOS' load to 0x7c0:0x0000 (segment 0x07c0, offset 0), which resolves to the
     ; same physical address, but can be surprising.
     ; A good practice is to enforce CS:IP at the very start of your boot sector.
-    jmp 0:start ; now the code is located at 0x7c00 so segment is 0x7c00
-
-start:
-    cli ; int off TODO: should this be performed here or before?
+    jmp 0:set_segments
+set_segments:
     mov ax, 0x00 ; segment offset is 0
     mov ds, ax ; data segment
     mov es, ax ; special segment
     mov ss, ax ; stack segment
     mov sp, 0x7c00 ; stack pointer
-    sti ; int on
 
 .load_protected:
-    cli
+    ; enable A20 line (21th bit)
+    ; assumming fast A20 latch
+    ; However, the Fast A20 method is not supported everywhere and there is no reliable way
+    ; to tell if it will have some effect or not on a given system. Even worse, on some systems,
+    ; it may actually do something else like blanking the screen, so it should be used only after
+    ; the BIOS has reported that FAST A20 is available. Code for systems lacking FAST A20 support
+    ; is also needed, so relying only on this method is discouraged. Also, on some chipsets you
+    ; might have to enable Fast A20 support in the BIOS configuration screen.
+    in al, 0x92
+    or al, 2
+    out 0x92, al
+
+    ; load GDT table
     lgdt[gdt_descriptor]
+    lidt[idt_descriptor]
+
+    ; load status from control register 0, set bit 0 and put it back
     mov eax, cr0
     or eax, 0x1
     mov cr0, eax
+
+    ; protected mode will activate when CS is updated -> perform a long jump
     jmp CODE_SEG:load32
 
 [BITS 32]
 load32:
+    ; load the early kernel code from disk and jump to it
+
     mov eax, 1 ; sector 0 is the boot sector, we want to load from sector 1
     mov ecx, 100 ; 100 sectors
     mov edi, KERNEL_32_BUFFER
     call ata_lba_read
     jmp CODE_SEG:KERNEL_32_BUFFER
 
-
-; eax -> first sector to read from
-; ecx -> number of sectors to read
-; edi -> buffer addr to store the data
-ata_lba_read:
-    ; mode 28 bit PIO  -> https://wiki.osdev.org/ATA_PIO_Mode
-    pushfd
-    and eax, 0x0FFFFFFF ; trucate to 28 bits
-    push eax
-    push ebx
-    push edx
-    push ecx
-    push edi
-
-    mov ebx, eax ; backup LBA to EBX
-
-    ; TODO: can this consecutive ports be treated at a single one?
-
-    ; send high 8 bits of the LBA to HD controller OR'd with the drive
-    ; which right now is hardcoded (0xE0) to the MASTER drive
-    mov edx, 0x01F6 ; select port
-    shr eax, 24 ; shift right 24 -> get bytes 24-27 to AL
-    or al, 0xE0 ; select Master drive
-    out dx, al  ; write to bus
-
-    ; send the total sectors to read
-    mov dx, 0x01F2 ; port select
-    mov eax, ecx ; set number of sectors to read
-    out dx, al   ; write to bus
-
-    ; send bits LBA_0-7
-    mov edx, 0x01F3 ; select port
-    mov eax, ebx; restore LBA
-    ;shr eax, 0 ; move bits 0-7 to AL
-    out dx, al  ; write to bus
-
-    ; send bits LBA_8-16
-    mov edx, 0x01F4 ; select port
-    mov eax, ebx; restore LBA
-    shr eax, 8  ; move bits 8-16 to AL
-    out dx, al  ; write to bus
-
-    ; send bits LBA_17-23
-    mov edx, 0x01F5 ; select port
-    mov eax, ebx; restore LBA
-    shr eax, 16  ; move bits 17-23 to AL
-    out dx, al  ; write to bus
-
-    ; issue read command
-    mov edx, 0x01F7 ; command register port
-    mov al, 0x20 ; read command
-    out dx, al
-
-    mov ebx, ecx ; store in ebx the number of sectors to read
-
-    ; a 400ns wait is needed https://wiki.osdev.org/ATA_PIO_Mode#400ns_delays
-    .read_next:
-    .wait:
-        mov edx, 0x1F7 ; command register port ; Poll port
-        in al, dx ; get status byte
-        test al, 0x80 ; test for BSY bit
-        jnz short .wait
-        test al, 0x8 ; test for DRQ bit, if set we are good to go
-    .retry:
-        jz short .wait
-
-    mov edx, 0x1F0 ; data port
-    mov ecx, 256
-    rep insw ; I/O
-    in al, dx		; delay 400ns to allow drive to set new values of BSY and DRQ
-    in al, dx
-    in al, dx
-    in al, dx
-    dec ebx
-    jnz short .read_next
-
-    pop edi
-    pop ecx
-    pop edx
-    pop ebx
-    pop eax
-    popfd
-    ret
-
+%include "ata_lba_read.asm"
 times 510 - ($ - $$) db 0 ; fill 510 bytes as 0 (510 - (current_addr - begin)))
 ; 510 instead of 512 because the last two store the boot signature
 dw 0xAA55; (little endian, 0x055AA is the boot signature)
