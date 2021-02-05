@@ -1,6 +1,6 @@
 #include "memory.h"
 
-// despite of memset taking an int c, it casts down to bytes
+// despite of memset taking an int c, it casts it down to bytes
 void* memset(void *s, int c, size_t n)
 {
     char *ptr = (char*) s;
