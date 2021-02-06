@@ -2,6 +2,7 @@
 #include "termio/termio.h"
 #include "idt/idt.h"
 #include "memory/memory.h"
+#include "memory/kheap.h"
 #include "io/io.h"
 
 void kernel_splash()
@@ -19,8 +20,11 @@ void kernel_main(void){
     terminal_init();
     kernel_splash();
     print("Starting...\n");
-
+    
+    kheap_init();
+    
     idt_init();
+    
     enable_interrupts();
 
 trap:

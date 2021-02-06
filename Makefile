@@ -2,7 +2,9 @@ FILES = build/kernel.asm.o build/kernel.o \
 		build/idt/idt.asm.o build/idt/idt.o \
 		build/memory/memory.o \
  		build/termio/termio.o \
-		build/io/io.asm.o
+		build/io/io.asm.o \
+		build/memory/heap.o \
+		build/memory/kheap.o
 
 INCLUDES = -Isrc
 
@@ -35,23 +37,28 @@ build/kernel.asm.o: src/kernel.asm
 	nasm -f elf -g -F dwarf src/kernel.asm -o build/kernel.asm.o
 
 build/kernel.o: src/kernel.c
-	i686-elf-gcc $(INCLUDES) $(CFLAGS) -std=gnu99 -c src/kernel.c -o build/kernel.o
+	i686-elf-gcc $(INCLUDES) $(CFLAGS) -std=gnu11 -c src/kernel.c -o build/kernel.o
 
 build/idt/idt.asm.o: src/idt/idt.asm
 	nasm -f elf -g -F dwarf src/idt/idt.asm -o build/idt/idt.asm.o
 
 build/idt/idt.o: src/idt/idt.c
-	i686-elf-gcc $(INCLUDES) -Isrc/idt $(CFLAGS) -std=gnu99 -c src/idt/idt.c -o build/idt/idt.o
+	i686-elf-gcc $(INCLUDES) -Isrc/idt $(CFLAGS) -std=gnu11 -c src/idt/idt.c -o build/idt/idt.o
 
 build/memory/memory.o: src/memory/memory.c
-	i686-elf-gcc $(INCLUDES) -Isrc/memory $(CFLAGS) -std=gnu99 -c src/memory/memory.c -o build/memory/memory.o
+	i686-elf-gcc $(INCLUDES) -Isrc/memory $(CFLAGS) -std=gnu11 -c src/memory/memory.c -o build/memory/memory.o
 
 build/termio/termio.o: src/termio/termio.c
-	i686-elf-gcc $(INCLUDES) -Isrc/termio $(CFLAGS) -std=gnu99 -c src/termio/termio.c -o build/termio/termio.o
+	i686-elf-gcc $(INCLUDES) -Isrc/termio $(CFLAGS) -std=gnu11 -c src/termio/termio.c -o build/termio/termio.o
 
 build/io/io.asm.o: src/io/io.asm
 	nasm -f elf -g -F dwarf src/io/io.asm -o build/io/io.asm.o
 
+build/memory/heap.o: src/memory/heap.c
+	i686-elf-gcc $(INCLUDES) -Isrc/memory $(CFLAGS) -std=gnu11 -c src/memory/heap.c -o build/memory/heap.o
+
+build/memory/kheap.o: src/memory/kheap.c
+	i686-elf-gcc $(INCLUDES) -Isrc/memory $(CFLAGS) -std=gnu11 -c src/memory/kheap.c -o build/memory/kheap.o
 
 run: all
 	qemu-system-i386 -hda bin/os.bin
