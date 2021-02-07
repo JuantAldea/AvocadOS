@@ -26,14 +26,14 @@ void int_0x21_handler()
 
 void int_0x20_handler()
 {
-    print("Int 0x20 - Timer interrupt\n");
+    //print("Int 0x20 - Timer interrupt\n");
     //ACK
     outb(0x20, 0x20);
 }
 
 void no_int_handler(uint32_t int_no)
 {
-    print("No Int handler\n");
+    //print("No Int handler\n");
     outb(0x20, 0x20);
 }
 
