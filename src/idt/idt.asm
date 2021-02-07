@@ -15,13 +15,13 @@ idt_load:
     ret
 
 %macro GENERATE_ISR_ROUTINES 1  ; macro, one parameter
-  GENERATE_INT %1
+  GENERATE_RAISE_INT %1
   ISR %1
 %endmacro
 
-%macro GENERATE_INT 1  ; macro, one parameter
-  [GLOBAL generate_int_%1]
-  generate_int_%1:
+%macro GENERATE_RAISE_INT 1  ; macro, one parameter
+  [GLOBAL raise_int_%1]
+  raise_int_%1:
     int %1
     ret
 %endmacro
