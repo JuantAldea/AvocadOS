@@ -5,6 +5,7 @@
 #include "memory/kheap.h"
 #include "io/io.h"
 #include "memory/paging.h"
+#include "disk/disk.h"
 
 void kernel_splash()
 {
@@ -28,6 +29,9 @@ void kernel_main(void)
 
     idt_init();
 
+    disk_discover_and_init();
+
+
     kernel_chunk = page_directory_init_4gb(PAGING_WRITABLE_PAGE
                     | PAGING_PRESENT
                     | PAGING_ACCESS_FROM_ALL);
@@ -48,42 +52,11 @@ void kernel_main(void)
                             | PAGING_PRESENT
                             | PAGING_WRITABLE_PAGE);
 
-    char *ptr = (void*)0x1000;
-    ptr[0] = '1';
-    ptr[1] = '2';
+    char buf[512];
 
-    // before mapping
-    print("Paging test\n");
-    print("0x1000 and 0x2000 virtual addresses are both mapped\nto the same physical page \"page_ptr\".\n");
-    print("####################################################\n");
+    struct disk* master_disk = disk_get(0);
 
-    print("[0x1000] before mapping: ");
-    print(ptr);
-    print("\n");
-
-    enable_paging();
-
-    // write to virtual address 0x1000
-    print("[0x1000] after mapping: ");
-    print(ptr);
-    print("\n");
-
-    ptr[0] = 'A';
-    ptr[1] = 'B';
-    print("[0x1000] after writing \"AB\" into it: ");
-    print(ptr);
-    print("\n");
-
-    /* read it from 0x2000 as well */
-    char *ptr2 = (void*)0x2000;
-    print("[0x2000]: ");
-    print(ptr2);
-    print("\n");
-    // page_ptr is still mapped linearly
-    print("[page_ptr]: ");
-    print(page_ptr);
-    print("\n");
-    print("####################################################\n");
+    disk_read_block(master_disk, 0, 1, &buf);
     enable_interrupts();
 
 trap:

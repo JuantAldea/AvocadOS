@@ -8,7 +8,8 @@ FILES = build/kernel.asm.o \
 		build/memory/heap.o \
 		build/memory/kheap.o \
 		build/memory/paging.asm.o \
-		build/memory/paging.o
+		build/memory/paging.o \
+		build/disk/disk.o
 
 INCLUDES = -Isrc
 
@@ -25,7 +26,7 @@ all: folders bin/boot.bin bin/kernel.bin
 	dd if=/dev/zero bs=512 count=100 >> bin/os.bin
 
 folders:
-	mkdir -p bin build build/idt build/memory build/termio build/io
+	mkdir -p bin build build/idt build/memory build/termio build/io build/disk
 
 bin/boot.bin: src/boot/*
 	# generate with debug symbols, then extract the binary
@@ -69,6 +70,12 @@ build/memory/paging.o: src/memory/paging.c
 
 build/memory/paging.asm.o: src/memory/paging.asm
 	nasm -f elf -g -F dwarf src/memory/paging.asm -o build/memory/paging.asm.o
+
+build/disk/disk.o: src/disk/disk.c
+	i686-elf-gcc $(INCLUDES) -Isrc/disk $(CFLAGS) -std=gnu11 -c src/disk/disk.c -o build/disk/disk.o
+
+##########################################
+##########################################
 
 run: all
 	qemu-system-i386 -hda bin/os.bin
