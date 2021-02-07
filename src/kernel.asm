@@ -22,6 +22,7 @@ _start_kernel:
 
     jmp $ ;trap
 
+; Programmable Interrupt Controller
 remap_master_pic:
   mov al, 00010001b
   out 0x20, al

@@ -1,10 +1,14 @@
-FILES = build/kernel.asm.o build/kernel.o \
-		build/idt/idt.asm.o build/idt/idt.o \
+FILES = build/kernel.asm.o \
+		build/kernel.o \
+		build/idt/idt.asm.o \
+		build/idt/idt.o \
 		build/memory/memory.o \
  		build/termio/termio.o \
 		build/io/io.asm.o \
 		build/memory/heap.o \
-		build/memory/kheap.o
+		build/memory/kheap.o \
+		build/memory/paging.asm.o \
+		build/memory/paging.o
 
 INCLUDES = -Isrc
 
@@ -59,6 +63,12 @@ build/memory/heap.o: src/memory/heap.c
 
 build/memory/kheap.o: src/memory/kheap.c
 	i686-elf-gcc $(INCLUDES) -Isrc/memory $(CFLAGS) -std=gnu11 -c src/memory/kheap.c -o build/memory/kheap.o
+
+build/memory/paging.o: src/memory/paging.c
+	i686-elf-gcc $(INCLUDES) -Isrc/memory $(CFLAGS) -std=gnu11 -c src/memory/paging.c -o build/memory/paging.o
+
+build/memory/paging.asm.o: src/memory/paging.asm
+	nasm -f elf -g -F dwarf src/memory/paging.asm -o build/memory/paging.asm.o
 
 run: all
 	qemu-system-i386 -hda bin/os.bin
