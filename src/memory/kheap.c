@@ -2,6 +2,7 @@
 #include "heap.h"
 #include "../config.h"
 #include "../termio/termio.h"
+#include "memory.h"
 
 struct heap kernel_heap;
 struct heap_table kheap_table;
@@ -21,6 +22,18 @@ void kheap_init()
 void *kmalloc(size_t size)
 {
     return heap_malloc(&kernel_heap, size);
+}
+
+void *kzalloc(size_t size)
+{
+    void *ptr = heap_malloc(&kernel_heap, size);
+
+    if (!ptr) {
+        return NULL;
+    }
+
+    memset(ptr, 0, size);
+    return ptr;
 }
 
 void kfree(void *ptr)
