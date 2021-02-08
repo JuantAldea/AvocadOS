@@ -29,7 +29,7 @@ init_code_segment:
     ; However, some BIOS' load to 0x7c0:0x0000 (segment 0x07c0, offset 0), which resolves to the
     ; same physical address, but can be surprising.
     ; A good practice is to enforce CS:IP at the very start of your boot sector.
-    jmp 0:set_segments
+    jmp dword 0:set_segments
 set_segments:
     mov ax, 0x00 ; segment offset is 0
     mov ds, ax ; data segment
@@ -51,8 +51,8 @@ set_segments:
     out 0x92, al
 
     ; load GDT table
-    lgdt[gdt_descriptor]
-    lidt[idt_descriptor]
+    lgdt[dword gdt_descriptor]
+    lidt[dword idt_descriptor]
 
     ; load status from control register 0, set bit 0 and put it back
     mov eax, cr0
@@ -60,7 +60,7 @@ set_segments:
     mov cr0, eax
 
     ; protected mode will activate when CS is updated -> perform a long jump
-    jmp CODE_SEG:load32
+    jmp dword CODE_SEG:load32
 
 [BITS 32]
 load32:

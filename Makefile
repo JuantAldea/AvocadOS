@@ -31,7 +31,7 @@ bin/image.bin: $(BINARIES)
 bin/boot.bin: build/boot.elf
 	mkdir -p $(@D)
 	# extract binary from ELF
-	i686-elf-ld -Ttext 0x7C00 build/boot.elf -o build/boot.o
+	i686-elf-ld -melf_i386 -ggg -Ttext 0x7C00 build/boot.elf -o build/boot.o
 	objcopy -O binary build/boot.o bin/boot.bin
 
 build/boot.elf: src/boot/*
@@ -40,8 +40,8 @@ build/boot.elf: src/boot/*
 	nasm -i src/boot/ -f elf -g -F dwarf src/boot/boot.asm -o build/boot.elf
 
 bin/kernel.bin: $(BUILD_FILES)
-	i686-elf-ld -ggg -relocatable $(BUILD_FILES) -o build/kernelfull.o
-	i686-elf-gcc $(CFLAGS) -T src/linker.ld -o bin/kernel.bin build/kernelfull.o
+	i686-elf-ld -melf_i386 -ggg -relocatable $(BUILD_FILES) -o build/kernelfull.o
+	i686-elf-gcc $(CFLAGS) -T src/linker.ld build/kernelfull.o -o bin/kernel.bin
 
 $(BUILD_C_FILES): $@
 	mkdir -p $(@D)
