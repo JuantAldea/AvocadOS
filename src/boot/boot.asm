@@ -72,7 +72,7 @@ load32:
     call ata_lba_read
     jmp CODE_SEG:KERNEL_32_BUFFER
 
-%include "ata_lba_read.asm"
+%include "ata_lba_read.inc"
 times 510 - ($ - $$) db 0 ; fill 510 bytes as 0 (510 - (current_addr - begin)))
 ; 510 instead of 512 because the last two store the boot signature
 dw 0xAA55; (little endian, 0x055AA is the boot signature)

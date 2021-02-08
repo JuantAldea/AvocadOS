@@ -1,92 +1,69 @@
-FILES = build/kernel.asm.o \
-		build/kernel.o \
-		build/idt/idt.asm.o \
-		build/idt/idt.o \
-		build/memory/memory.o \
- 		build/termio/termio.o \
-		build/io/io.asm.o \
-		build/memory/heap.o \
-		build/memory/kheap.o \
-		build/memory/paging.asm.o \
-		build/memory/paging.o \
-		build/disk/disk.o
+C_FILES := $(shell find src -name "*.c")
+OBJECT_C_FILES = $(C_FILES:.c=.o)
+BUILD_C_FILES = $(OBJECT_C_FILES:src/%=build/%)
 
-INCLUDES = -Isrc
+ASM_FILES := $(shell find src -path src/boot -prune -false -o -name "*.asm")
+OBJECT_ASM_FILES = $(ASM_FILES:.asm=.asm.o)
+BUILD_ASM_FILES = $(OBJECT_ASM_FILES:src/%=build/%)
 
-CFLAGS = -ggdb3 -ffreestanding -falign-jumps -falign-functions -falign-labels -falign-loops \
+BUILD_FILES = $(BUILD_ASM_FILES) $(BUILD_C_FILES)
+
+BINARIES = bin/boot.bin bin/kernel.bin
+
+INCLUDES = -Isrc/
+
+CFLAGS = -ggdb3 \
+	-ffreestanding -falign-jumps -falign-functions -falign-labels -falign-loops \
 	-fstrength-reduce -fomit-frame-pointer -finline-functions -Wno-unused-function \
 	-fno-builtin -Wno-unused-label -Wno-cpp -Wno-unused-parameter \
 	-nostdlib -nostartfiles -nodefaultlibs \
-	-Wall -Wextra -Werror -O0 -Iinc -m32
+	-Wall -Wextra -Werror -O0 -Iinc -m32 \
+	-std=gnu11
 
-all: folders bin/boot.bin bin/kernel.bin
-	dd if=bin/boot.bin > bin/os.bin
-	dd if=bin/kernel.bin >> bin/os.bin
+all: bin/image.bin
+
+bin/image.bin: $(BINARIES)
+	dd if=bin/boot.bin > bin/image.bin
+	dd if=bin/kernel.bin >> bin/image.bin
 	# padding and safe space all that
-	dd if=/dev/zero bs=512 count=100 >> bin/os.bin
+	dd if=/dev/zero bs=512 count=100 >> bin/image.bin
 
-folders:
-	mkdir -p bin build build/idt build/memory build/termio build/io build/disk
-
-bin/boot.bin: src/boot/*
-	# generate with debug symbols, then extract the binary
-	nasm -i src/boot/ -f elf -g -F dwarf src/boot/boot.asm -o build/boot.elf
+bin/boot.bin: build/boot.elf
+	mkdir -p $(@D)
+	# extract binary from ELF
 	i686-elf-ld -Ttext 0x7C00 build/boot.elf -o build/boot.o
 	objcopy -O binary build/boot.o bin/boot.bin
 
-bin/kernel.bin: $(FILES)
-	i686-elf-ld -ggg -relocatable $(FILES) -o build/kernelfull.o
-	i686-elf-gcc $(CFLAGS) -T src/linker.ld -o bin/kernel.bin -ffreestanding -O0 -nostdlib build/kernelfull.o
+build/boot.elf: src/boot/*
+	mkdir -p $(@D)
+	# generate elf so that we have debug symbols
+	nasm -i src/boot/ -f elf -g -F dwarf src/boot/boot.asm -o build/boot.elf
 
-build/kernel.asm.o: src/kernel.asm
-	nasm -f elf -g -F dwarf src/kernel.asm -o build/kernel.asm.o
+bin/kernel.bin: $(BUILD_FILES)
+	i686-elf-ld -ggg -relocatable $(BUILD_FILES) -o build/kernelfull.o
+	i686-elf-gcc $(CFLAGS) -T src/linker.ld -o bin/kernel.bin build/kernelfull.o
 
-build/kernel.o: src/kernel.c
-	i686-elf-gcc $(INCLUDES) $(CFLAGS) -std=gnu11 -c src/kernel.c -o build/kernel.o
+$(BUILD_C_FILES): $@
+	mkdir -p $(@D)
+	i686-elf-gcc $(INCLUDES) $(CFLAGS) -c $(patsubst %.o,%.c,$(@:build/%=src/%)) -o $@
 
-build/idt/idt.asm.o: src/idt/idt.asm
-	nasm -f elf -g -F dwarf src/idt/idt.asm -o build/idt/idt.asm.o
-
-build/idt/idt.o: src/idt/idt.c
-	i686-elf-gcc $(INCLUDES) -Isrc/idt $(CFLAGS) -std=gnu11 -c src/idt/idt.c -o build/idt/idt.o
-
-build/memory/memory.o: src/memory/memory.c
-	i686-elf-gcc $(INCLUDES) -Isrc/memory $(CFLAGS) -std=gnu11 -c src/memory/memory.c -o build/memory/memory.o
-
-build/termio/termio.o: src/termio/termio.c
-	i686-elf-gcc $(INCLUDES) -Isrc/termio $(CFLAGS) -std=gnu11 -c src/termio/termio.c -o build/termio/termio.o
-
-build/io/io.asm.o: src/io/io.asm
-	nasm -f elf -g -F dwarf src/io/io.asm -o build/io/io.asm.o
-
-build/memory/heap.o: src/memory/heap.c
-	i686-elf-gcc $(INCLUDES) -Isrc/memory $(CFLAGS) -std=gnu11 -c src/memory/heap.c -o build/memory/heap.o
-
-build/memory/kheap.o: src/memory/kheap.c
-	i686-elf-gcc $(INCLUDES) -Isrc/memory $(CFLAGS) -std=gnu11 -c src/memory/kheap.c -o build/memory/kheap.o
-
-build/memory/paging.o: src/memory/paging.c
-	i686-elf-gcc $(INCLUDES) -Isrc/memory $(CFLAGS) -std=gnu11 -c src/memory/paging.c -o build/memory/paging.o
-
-build/memory/paging.asm.o: src/memory/paging.asm
-	nasm -f elf -g -F dwarf src/memory/paging.asm -o build/memory/paging.asm.o
-
-build/disk/disk.o: src/disk/disk.c
-	i686-elf-gcc $(INCLUDES) -Isrc/disk $(CFLAGS) -std=gnu11 -c src/disk/disk.c -o build/disk/disk.o
+$(BUILD_ASM_FILES): $@
+	mkdir -p $(@D)
+	nasm -i $(@D:build/%=src/%) -f elf -g -F dwarf $(patsubst %.o,%,$(@:build/%=src/%)) -o $@
 
 ##########################################
 ##########################################
 
 run: all
-	qemu-system-i386 -hda bin/os.bin
+	qemu-system-i386 -hda bin/image.bin
 
 gdb: all
 	gdb \
 	-ex "set confirm off" \
-    -ex "add-symbol-file build/boot.o 0x7c00 " \
+	-ex "add-symbol-file build/boot.o 0x7c00 " \
 	-ex "add-symbol-file build/kernelfull.o 0x0100000 " \
-    -ex "target remote | qemu-system-i386 -S -gdb stdio -hda bin/os.bin" \
-    -ex "break kernel_main"
+	-ex "target remote | qemu-system-i386 -S -gdb stdio -hda bin/image.bin" \
+	-ex "break kernel_main"
 
 clean:
 	rm -rf bin/*
