@@ -1,4 +1,5 @@
 #include "termio.h"
+#include "../misc/string.h"
 
 static uint16_t *video_memory = (uint16_t *) (0xb8000);
 static uint16_t terminal_row = 0;
@@ -19,16 +20,6 @@ void terminal_init ()
             terminal_print_char_x_y(filler_char, x, y);
         }
     }
-}
-
-size_t strlen(const char  * const str)
-{
-    size_t len = 0;
-    while (str[len]) {
-        ++len;
-    }
-
-    return len;
 }
 
 void terminal_print_char_x_y(const uint16_t character, const uint16_t x, const uint16_t y)
