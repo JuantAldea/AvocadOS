@@ -1,5 +1,5 @@
 #include "termio.h"
-#include "../misc/string.h"
+#include "../string/string.h"
 
 static uint16_t *video_memory = (uint16_t *) (0xb8000);
 static uint16_t terminal_row = 0;

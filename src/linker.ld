@@ -2,7 +2,6 @@
 
 ENTRY(_start_kernel) /* entry point */
 OUTPUT_FORMAT(binary)  /* plain binary, no elf, nothing fancy just yet */
-
 SECTIONS
 {
     /* 
@@ -18,7 +17,6 @@ SECTIONS
     /* as in  <filename>(section>) */
     .text : ALIGN(4096)
     {
-        
         *(.text)
     }
 

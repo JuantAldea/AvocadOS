@@ -1,4 +1,5 @@
 [BITS 32]
+section .text
 [GLOBAL _start_kernel] ; export symbol
 [EXTERN kernel_main] ; "forward-declaration" of kernel_main (kernel.c)
 
