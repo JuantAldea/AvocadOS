@@ -1,11 +1,12 @@
 ; http://www.ctyme.com/rbrown.htm
 ; ORG 0x7c00 ; commented out because we are generating an ELF file to get debug symbols. See Makefile
+section .text
 [BITS 16] ; 16 bit code (for the assembler)
 
 [global _start]
 
+;extern KERNEL_32_BUFFER
 KERNEL_32_BUFFER equ 0x0100000 ; 1MB
-
 ; account for the BIOS Parameter block BPB
 ; https://wiki.osdev.org/FAT#BPB_.28BIOS_Parameter_Block.29
 _start:
@@ -31,11 +32,11 @@ init_code_segment:
     ; A good practice is to enforce CS:IP at the very start of your boot sector.
     jmp dword 0:set_segments
 set_segments:
-    mov ax, 0x00 ; segment offset is 0
+    xor ax, ax ; segment offset is 0
     mov ds, ax ; data segment
     mov es, ax ; special segment
     mov ss, ax ; stack segment
-    mov sp, 0x7c00 ; stack pointer
+    mov sp, 0x2000 ; stack pointer
 
 .load_protected:
     ; enable A20 line (21th bit)
@@ -59,6 +60,13 @@ set_segments:
     or eax, 0x1
     mov cr0, eax
 
+    mov ax, DATA_SEG
+	mov ds, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
+	mov ss, ax
+
     ; protected mode will activate when CS is updated -> perform a long jump
     jmp dword CODE_SEG:load32
 
@@ -73,8 +81,8 @@ load32:
     jmp CODE_SEG:KERNEL_32_BUFFER
 
 %include "ata_lba_read.inc"
-times 510 - ($ - $$) db 0 ; fill 510 bytes as 0 (510 - (current_addr - begin)))
+;times 510 - ($ - $$) db 0 ; fill 510 bytes as 0 (510 - (current_addr - begin)))
 ; 510 instead of 512 because the last two store the boot signature
-dw 0xAA55; (little endian, 0x055AA is the boot signature)
+;dw 0xAA55; (little endian, 0x55AA is the boot signature)
 
 ; BIOS wont load anthing from here, as it only loads 512 bytes

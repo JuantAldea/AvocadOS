@@ -1,30 +1,53 @@
 #include "kernel.h"
-#include "termio/termio.h"
-#include "idt/idt.h"
-#include "memory/memory.h"
-#include "memory/kheap.h"
-#include "io/io.h"
-#include "memory/paging.h"
-#include "disk/disk.h"
+#include "../termio/termio.h"
+#include "../idt/idt.h"
+#include "../memory/memory.h"
+#include "../memory/kheap.h"
+#include "../io/io.h"
+#include "../memory/paging.h"
+#include "../disk/disk.h"
 
 void kernel_splash()
 {
+    print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+    static volatile char str0[] = "\n\n\n\n\n";
+   
+    static volatile char str1[] = "                  _                                _    ___  __\n";
+    static volatile char str2[] = "                 /_\\ __   __ ___    ___  __ _   __| |  /___\\/ _\\\n";
+    static volatile char str3[] = "                //_\\\\\\ \\ / // _ \\  / __|/ _` | / _` | //  //\\ \\\n";
+    static volatile char str4[] = "               /  _  \\\\ V /| (_) || (__| (_| || (_| |/ \\_// _\\ \\\n";
+    static volatile char str5[] = "               \\_/ \\_/ \\_/  \\___/  \\___|\\__,_| \\__,_|\\___/  \\__/\n";
+     (void) str0;
+     (void) str1;
+     (void) str2;
+     (void) str3;
+     (void) str4;
+     (void) str5;
+    /*
     print("\n\n\n\n\n");
     terminal_put_str("                  _                                _    ___  __\n", 2);
     terminal_put_str("                 /_\\ __   __ ___    ___  __ _   __| |  /___\\/ _\\\n", 2);
     terminal_put_str("                //_\\\\\\ \\ / // _ \\  / __|/ _` | / _` | //  //\\ \\\n", 2);
     terminal_put_str("               /  _  \\\\ V /| (_) || (__| (_| || (_| |/ \\_// _\\ \\\n", 2);
     terminal_put_str("               \\_/ \\_/ \\_/  \\___/  \\___|\\__,_| \\__,_|\\___/  \\__/\n", 2);
+    
+    terminal_put_str(str0, 2);
+    terminal_put_str(str1, 2);
+    terminal_put_str(str2, 2);
+    terminal_put_str(str3, 2);
+    terminal_put_str(str4, 2);
+    terminal_put_str(str5, 2);
+    */
 }
 
-static struct page_directory_handle *kernel_chunk = NULL;
+//bstatic struct page_directory_handle *kernel_chunk = NULL;
 
 void kernel_main(void)
 {
     terminal_init();
     kernel_splash();
     print("Starting...\n");
-
+/*
     kheap_init();
 
     idt_init();
@@ -58,6 +81,8 @@ void kernel_main(void)
 
     disk_read_block(master_disk, 0, 1, &buf);
     enable_interrupts();
+*/
+    print("Done for now\n");
 
 trap:
     goto trap;

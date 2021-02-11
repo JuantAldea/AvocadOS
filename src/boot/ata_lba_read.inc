@@ -2,6 +2,8 @@
 ; ecx -> number of sectors to read
 ; edi -> buffer addr to store the data
 ata_lba_read:
+    push ebp
+    mov ebp, esp
     ; mode 28 bit PIO  -> https://wiki.osdev.org/ATA_PIO_Mode
     pushfd
     and eax, 0x0FFFFFFF ; trucate to 28 bits
@@ -78,4 +80,5 @@ ata_lba_read:
     pop ebx
     pop eax
     popfd
+    pop ebp
     ret

@@ -88,5 +88,5 @@ enable_interrupts:
 
 [GLOBAL disable_interrupts]
 disable_interrupts:
-  sti
+  cli
   ret
