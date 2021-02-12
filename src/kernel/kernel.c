@@ -1,11 +1,11 @@
 #include "kernel.h"
-#include "termio/termio.h"
-#include "idt/idt.h"
-#include "memory/memory.h"
-#include "memory/kheap.h"
-#include "io/io.h"
-#include "memory/paging.h"
-#include "disk/disk.h"
+#include "../termio/termio.h"
+#include "../idt/idt.h"
+#include "../memory/memory.h"
+#include "../memory/kheap.h"
+#include "../io/io.h"
+#include "../memory/paging.h"
+#include "../disk/disk.h"
 
 void kernel_splash()
 {
@@ -58,6 +58,8 @@ void kernel_main(void)
 
     disk_read_block(master_disk, 0, 1, &buf);
     enable_interrupts();
+
+    print("Done for now\n");
 
 trap:
     goto trap;
