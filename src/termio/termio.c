@@ -1,9 +1,9 @@
 #include "termio.h"
 #include "../string/string.h"
 
-static uint16_t *video_memory = (uint16_t *) (0xb8000);
-static uint16_t terminal_row = 0;
-static uint16_t terminal_column = 0;
+static volatile uint16_t *video_memory;
+static volatile uint16_t terminal_row;
+static volatile uint16_t terminal_column;
 
 uint16_t terminal_make_char(const char c, const char colour)
 {
@@ -12,6 +12,7 @@ uint16_t terminal_make_char(const char c, const char colour)
 
 void terminal_init ()
 {
+    video_memory = (uint16_t *) (0xb8000);
     terminal_row = 0;
     terminal_column = 0;
     uint16_t filler_char = terminal_make_char(' ', 0);
