@@ -82,7 +82,7 @@ void kernel_main(void)
     } else {
         print("NULL\n");
     }
-    
+
     struct disk_stream *stream = diskstream_open(0);
     unsigned char *buffer = kmalloc(512);
     diskstream_seek(stream, 0x1FE);

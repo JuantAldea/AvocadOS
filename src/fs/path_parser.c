@@ -37,7 +37,7 @@ struct path_root *pathparser_path_parse(const char * const path)
 
     const char *path_ptr = path;
     p->drive_number = pathparser_path_get_drive(path_ptr);
-   
+
     if (p->drive_number < 0) {
         goto error_out;
     }
@@ -48,21 +48,21 @@ struct path_root *pathparser_path_parse(const char * const path)
         const char *next_slash = (char*) memchr(path_ptr, '/', path_end - path_ptr);
         next_slash = next_slash != NULL ? next_slash : path_end;
         size_t part_len = next_slash - path_ptr;
-        
+
         if (!part_len) {
             break;
         }
 
         *current_segment = kzalloc(sizeof(struct path_part));
-        
+
         (*current_segment)->part = kzalloc((part_len + 1) * sizeof(char));
         memcpy((*current_segment)->part, path_ptr, part_len);
         path_ptr += part_len + 1;
         current_segment = &((*current_segment)->next);
     }
-    
+
     return p;
- 
+
 error_out:;
     pathparse_path_free(p);
     return NULL;
@@ -71,7 +71,7 @@ error_out:;
 void pathparse_path_free(struct path_root *path)
 {
     struct path_part *ptr = path->first;
-    
+
     while(ptr) {
         struct path_part *next = ptr->next;
         if (ptr->part) kfree(ptr->part);

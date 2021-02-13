@@ -3,7 +3,7 @@
 #include <stddef.h>
 #include "disk.h"
 
-struct disk_stream 
+struct disk_stream
 {
     size_t ppos;
     struct disk* disk;

@@ -27,7 +27,7 @@ int heap_create(struct heap *heap, void *ptr, void *end_addr, struct heap_table 
     if (!heap_validate_alignment(ptr) || !heap_validate_alignment(end_addr)) {
         return -EINVAL;
     }
-    
+
     memset(heap, 0, sizeof(struct heap));
     heap->base_addr = ptr;
     heap->table = heap_table;
@@ -36,14 +36,14 @@ int heap_create(struct heap *heap, void *ptr, void *end_addr, struct heap_table 
     if (heap_validate_table(ptr, end_addr, heap_table)) {
         return -EINVAL;
     }
-    
+
     const size_t table_size = sizeof(HEAP_TABLE_ENTRY) * heap_table->len;
     memset(heap_table->entries, HEAP_MEMORY_BLOCK_FREE, table_size);
-    
+
     return KERNEL_OK;
 }
 
-size_t size_to_nblocks (size_t size) 
+size_t size_to_nblocks (size_t size)
 {
     return size / KERNEL_HEAP_BLOCK_SIZE + ((size % KERNEL_HEAP_BLOCK_SIZE) ? 1 : 0);
 }
@@ -52,11 +52,11 @@ int find_first_block(struct heap *heap, size_t n_blocks)
 {
     struct heap_table *heap_table = heap->table;
     HEAP_TABLE_ENTRY *heap_entries = heap_table->entries;
-    
+
     int remaining_blocks = n_blocks;
     int found_block = -1;
-    
-    
+
+
     for (size_t i = 0; (i < heap_table->len) && remaining_blocks; ++i) {
         if (BLOCK_TEST_TAKEN(heap_entries[i])) {
             found_block = -1;
@@ -70,7 +70,7 @@ int find_first_block(struct heap *heap, size_t n_blocks)
 
         --remaining_blocks;
     }
-    
+
     if (found_block == -1){
         return -ENOMEM;
     }
@@ -82,13 +82,13 @@ void heap_reserve_blocks(struct heap *heap, size_t first_block, size_t n_blocks)
 {
     HEAP_TABLE_ENTRY *heap_entries = heap->table->entries;
     const size_t end_block = first_block + n_blocks;
-    
+
     for (size_t j = first_block; j < end_block; ++j) {
         BLOCK_SET_TAKEN(heap_entries[j]);
         BLOCK_SET_NOT_FIRST(heap_entries[j]);
         BLOCK_SET_NEXT(heap_entries[j]);
     }
-    
+
     //set the first block to first
     BLOCK_SET_FIRST(heap_entries[first_block]);
     //set the last has NO-NEXT
@@ -108,36 +108,36 @@ size_t heap_addr_to_block(const struct heap * const heap, void *ptr)
 void *heap_malloc_blocks(struct heap *heap, size_t n_blocks)
 {
     int first_block = find_first_block(heap, n_blocks);
-    
+
     if (first_block < 0) {
         return NULL;
     }
 
     heap_reserve_blocks(heap, first_block, n_blocks);
-    
+
     return heap_block_to_addr(heap, first_block);
 }
 
 void *heap_malloc(struct heap *heap, size_t size)
 {
     size_t n_blocks = size_to_nblocks(size);
-    
+
     if (!n_blocks) {
         // no 0-long regions
         return NULL;
     }
 
-    return heap_malloc_blocks(heap, n_blocks);    
+    return heap_malloc_blocks(heap, n_blocks);
 }
 
 void heap_free(struct heap *heap, void *ptr)
 {
     struct heap_table *heap_table = heap->table;
-    
+
     HEAP_TABLE_ENTRY *heap_entries = heap_table->entries;
 
     size_t block = heap_addr_to_block(heap, ptr);
-    
+
     if (!BLOCK_TEST_FIRST(heap_entries[block])) {
         //int?
         return;
