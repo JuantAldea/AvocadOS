@@ -55,3 +55,4 @@ dkms.conf
 .vscode-ctags
 .gdb_history
 .vscode
+workspace.code-workspace
