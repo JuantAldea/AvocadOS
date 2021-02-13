@@ -52,7 +52,7 @@ $(TARGET): bin/boot.bin bin/kernel.bin
 	mkdir -p mnt
 	fusefat -o rw+ $@ mnt/
 	echo "Would you fancy some avocados?" > mnt/dummy.txt
-	umount -q mnt/ || /bin/true
+	fusermount -u -q -z mnt/ || /bin/true
 
 build/kernel/kernel.elf: $(OBJ_FILES) $(LINKER_FILES) build/kernel/kernel.asm.o
 	@mkdir -p $(@D)
