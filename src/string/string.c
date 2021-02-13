@@ -19,10 +19,19 @@ size_t strnlen(const char  * const str, size_t max_len)
 
 bool is_digit(const char c)
 {
-    return c > '0' && c < '9';
+    return c >= '0' && c <= '9';
 }
 
 int numeric_char_to_digit(const char c)
 {
     return c - '0';
+}
+
+char digit_to_char(const int c)
+{
+    if (c < 0 || c > 9){
+        return 'E';
+    }
+
+    return '0' + c;
 }
