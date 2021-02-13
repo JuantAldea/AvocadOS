@@ -3,17 +3,18 @@
 section .text
 [BITS 16] ; 16 bit code (for the assembler)
 
-[global _start]
-
 ;extern KERNEL_32_BUFFER
 KERNEL_32_BUFFER equ 0x0100000 ; 1MB
 ; account for the BIOS Parameter block BPB
 ; https://wiki.osdev.org/FAT#BPB_.28BIOS_Parameter_Block.29
-_start:
+
+[global _fat_header_start]
+
+_fat_header_start:
     jmp short init_code_segment
     nop
 
-times 33 db 0 ; filler, as the BIOS might write its BPB into this section.
+%include "fat16_header.inc"
 
 %include "gdt.inc"
 

@@ -47,7 +47,11 @@ $(TARGET): bin/boot.bin bin/kernel.bin
 	dd if=bin/boot.bin > $@
 	dd if=bin/kernel.bin >> $@
 	# padding and safe space all that
-	dd if=/dev/zero bs=512 count=100 >> $@
+	dd if=/dev/zero bs=1048576 count=16 >> $@
+	mkdir -p mnt
+	fusefat -o rw+ $@ mnt/
+	echo "Would you fancy some avocados?" > mnt/dummy.txt
+	umount mnt/
 
 build/kernel/kernel.elf: $(OBJ_FILES) src/kernel/linker.ld build/kernel/kernel.asm.o
 	@mkdir -p $(@D)
