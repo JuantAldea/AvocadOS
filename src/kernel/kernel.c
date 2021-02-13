@@ -6,6 +6,9 @@
 #include "../io/io.h"
 #include "../memory/paging.h"
 #include "../disk/disk.h"
+#include "../disk/disk_stream.h"
+#include "../fs/path_parser.h"
+#include "../string/string.h"
 
 void kernel_splash()
 {
@@ -18,6 +21,14 @@ void kernel_splash()
 }
 
 static struct page_directory_handle *kernel_chunk = NULL;
+void print_path(struct path_root *path){
+    struct path_part *part = path->first;
+    while (part) {
+        print(part->part);
+        print("\n");
+        part = part->next;
+    }
+}
 
 void kernel_main(void)
 {
@@ -56,11 +67,28 @@ void kernel_main(void)
 
     struct disk* master_disk = disk_get(0);
 
-    disk_read_block(master_disk, 0, 1, &buf);
     enable_interrupts();
 
-    print("Done for now\n");
+    disk_read_block(master_disk, 0, 1, &buf);
 
+
+    char path[] = "1:/Compilers/Principles/Techniques/and/Tools";
+    print(path);
+    print("\n");
+    struct path_root *root = pathparser_path_parse(path);
+    if (root) {
+        print_path (root);
+        print("\n");
+    } else {
+        print("NULL\n");
+    }
+    
+    struct disk_stream *stream = diskstream_open(0);
+    unsigned char *buffer = kmalloc(512);
+    diskstream_seek(stream, 0x1FE);
+    diskstream_read(stream, buffer, 10);
+
+    print("Done for now\n");
 trap:
     goto trap;
 }

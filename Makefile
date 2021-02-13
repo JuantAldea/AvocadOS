@@ -10,6 +10,9 @@ FILES = build/kernel/kernel.o \
 		build/memory/paging.asm.o \
 		build/memory/paging.o \
 		build/disk/disk.o \
+		build/disk/disk_stream.o \
+		build/string/string.o \
+		build/fs/path_parser.o \
 		#build/kernel/kernel.asm.o \
 
 BOOT_FILES = $(shell find src/boot/)
@@ -62,7 +65,7 @@ bin/boot.bin: build/boot/boot.elf
 	@mkdir -p $(@D)
 	objcopy -O binary $< $@
 
-build/boot/%.asm.o: $(BOOT_FILES)
+build/boot/boot.asm.o: $(BOOT_FILES)
 	@mkdir -p $(@D)
 	nasm -f elf -g -F dwarf -i $(dir $<) src/boot/boot.asm -o $@
 
