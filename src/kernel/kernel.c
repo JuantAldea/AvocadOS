@@ -21,8 +21,13 @@ void kernel_splash()
 }
 
 static struct page_directory_handle *kernel_chunk = NULL;
-void print_path(struct path_root *path){
+
+void print_path(struct path_root *path)
+{
     struct path_part *part = path->first;
+    print("Drive: ");
+    terminal_put_char(digit_to_char(path->drive_number), 15);
+    terminal_put_char('\n', 15);
     while (part) {
         print(part->part);
         print("\n");
