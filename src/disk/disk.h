@@ -1,6 +1,7 @@
 #ifndef __DISK_h
 #define __DISK_h
 #include <stdint.h>
+#include "../fs/vfs.h"
 
 #define BUSY_BIT 0x80
 #define DRQ_BIT  0x08
@@ -15,10 +16,12 @@ struct disk
     DISK_TYPE type;
     int sector_size;
     uint8_t port;
+    struct filesystem_operations *fs_operations;
+    int id;
 };
 
 int disk_read_block(const struct disk * const disk, const unsigned int lba, const int n, void * const buffer);
-void disk_discover_and_init();
+void disk_init();
 struct disk* disk_get(int disk_index);
 
 #endif

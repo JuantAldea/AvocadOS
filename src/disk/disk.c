@@ -1,8 +1,11 @@
+#include <stddef.h>
+
 #include "disk.h"
 #include "../memory/memory.h"
 #include "../io/io.h"
 #include "../status.h"
-#include <stddef.h>
+#include "../fs/vfs.h"
+
 
 struct disk disks[1];
 
@@ -31,12 +34,14 @@ int disk_read_sector(const struct disk * const disk, const int lba, const int n,
     return 0;
 }
 
-void disk_discover_and_init()
+void disk_init()
 {
     memset(&disks, 0, sizeof(disks));
     disks[0].type = DISK_TYPE_PHYSICAL;
     disks[0].sector_size = DISK_SECTOR_SIZE;
     disks[0].port = ATA_MASTER;
+    disks[0].id = 0;
+    disks[0].fs_operations = vfs_discover_fs(&disks[0]);
 }
 
 struct disk* disk_get(int disk_index)

@@ -1,7 +1,6 @@
 #include "disk_stream.h"
 #include "../memory/memory.h"
 #include "../memory/kheap.h"
-#include "disk.h"
 
 int diskstream_seek(struct disk_stream *stream, size_t ppos)
 {

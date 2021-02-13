@@ -8,6 +8,7 @@
 #include "../disk/disk.h"
 #include "../disk/disk_stream.h"
 #include "../fs/path_parser.h"
+#include "../fs/vfs.h"
 #include "../string/string.h"
 
 void kernel_splash()
@@ -26,8 +27,8 @@ void print_path(struct path_root *path)
 {
     struct path_part *part = path->first;
     print("Drive: ");
-    terminal_put_char(digit_to_char(path->drive_number), 15);
-    terminal_put_char('\n', 15);
+    print_char(digit_to_char(path->drive_number));
+    print_char('\n');
     while (part) {
         print(part->part);
         print("\n");
@@ -45,7 +46,8 @@ void kernel_main(void)
 
     idt_init();
 
-    disk_discover_and_init();
+
+
 
 
     kernel_chunk = page_directory_init_4gb(PAGING_WRITABLE_PAGE
@@ -71,6 +73,8 @@ void kernel_main(void)
     char buf[512];
 
     struct disk* master_disk = disk_get(0);
+    vfs_init();
+    disk_init();
 
     enable_interrupts();
 

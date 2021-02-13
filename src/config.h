@@ -11,5 +11,6 @@
 #define KERNEL_HEAP_TABLE_ADDRESS 0x00007e00
 
 #define MAX_PATH_LEN 250
+#define MAX_FILESYSTEMS 5
 
 #endif /* __CONFIG_H */

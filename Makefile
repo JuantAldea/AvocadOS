@@ -13,6 +13,8 @@ FILES = build/kernel/kernel.o \
 		build/disk/disk_stream.o \
 		build/string/string.o \
 		build/fs/path_parser.o \
+		build/fs/vfs.o \
+		build/fs/fat16.o \
 		#build/kernel/kernel.asm.o \
 
 BOOT_FILES = $(shell find src/boot/)

@@ -6,4 +6,5 @@
 #define ENOMEM          12      /* Out of memory */
 #define EINVAL          22      /* Invalid argument */
 
+#define EMEDIUMTYPE     124     /* Wrong medium type */
 #endif
