@@ -40,3 +40,8 @@ void kfree(void *ptr)
 {
     heap_free(&kernel_heap, ptr);
 }
+
+void *malloc(size_t size)
+{
+    return kmalloc(size);
+}
