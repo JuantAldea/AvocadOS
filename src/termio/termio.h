@@ -15,5 +15,6 @@ void terminal_print_string_x_y(const char *str, const char colour, const uint8_t
 void terminal_put_str(const char *str, const char colour);
 void terminal_init();
 void print(const char * const str);
+void print_char(const char chr);
 
 #endif /* __TERMIO_H*/

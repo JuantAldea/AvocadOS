@@ -65,3 +65,8 @@ void print(const char * const str)
 {
     terminal_put_str(str, 15);
 }
+
+void print_char(const char chr)
+{
+    terminal_put_char(chr, 15);
+}
