@@ -51,7 +51,7 @@ $(TARGET): bin/boot.bin bin/kernel.bin
 	mkdir -p mnt
 	fusefat -o rw+ $@ mnt/
 	echo "Would you fancy some avocados?" > mnt/dummy.txt
-	umount mnt/
+	umount -q mnt/ || /bin/true
 
 build/kernel/kernel.elf: $(OBJ_FILES) src/kernel/linker.ld build/kernel/kernel.asm.o
 	@mkdir -p $(@D)
