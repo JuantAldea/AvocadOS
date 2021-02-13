@@ -40,7 +40,7 @@ LD = i686-elf-ld
 TARGET = bin/image.bin
 QEMU_RUN_COMMAND = qemu-system-i386 -hda $(TARGET)
 
-.phony: all folder run gdb
+.phony: all folder run gdb clean
 
 all: $(TARGET)
 
@@ -132,7 +132,6 @@ gdb: all
 	-ex "target remote | $(QEMU_RUN_COMMAND) -S -gdb stdio" \
 	-ex "break kernel_main"
 
-.phony: clean
 clean:
 	rm -rf bin/*
 	rm -rf build/*
