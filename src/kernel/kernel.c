@@ -40,21 +40,17 @@ void kernel_main(void)
 {
     terminal_init();
     kernel_splash();
-    print("Starting...\n");
+    print(" Starting...\n\n");
 
     kheap_init();
 
     idt_init();
 
-
-
-
-
     kernel_chunk = page_directory_init_4gb(PAGING_WRITABLE_PAGE
                     | PAGING_PRESENT
                     | PAGING_ACCESS_FROM_ALL);
     paging_switch_directory(kernel_chunk);
-
+    print(" Enable paging\n");
     char *page_ptr = kzalloc(4096);
 
     // map the region pointed by page_ptr to virtual addr 0x1000
@@ -70,34 +66,14 @@ void kernel_main(void)
                             | PAGING_PRESENT
                             | PAGING_WRITABLE_PAGE);
 
-    char buf[512];
-
-    struct disk* master_disk = disk_get(0);
+    print(" Init volume: ");
     vfs_init();
     disk_init();
 
+    print(" Enable interrupts\n");
     enable_interrupts();
 
-    disk_read_block(master_disk, 0, 1, &buf);
-
-
-    char path[] = "1:/Compilers/Principles/Techniques/and/Tools";
-    print(path);
-    print("\n");
-    struct path_root *root = pathparser_path_parse(path);
-    if (root) {
-        print_path (root);
-        print("\n");
-    } else {
-        print("NULL\n");
-    }
-
-    struct disk_stream *stream = diskstream_open(0);
-    unsigned char *buffer = kmalloc(512);
-    diskstream_seek(stream, 0x1FE);
-    diskstream_read(stream, buffer, 10);
-
-    print("Done for now\n");
+    print("\n\n Done, for now.");
 trap:
     goto trap;
 }
