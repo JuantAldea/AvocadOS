@@ -1,0 +1,1 @@
+__KERNEL_32_LOAD_ADDRESS__ = 1M;

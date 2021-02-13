@@ -24,6 +24,7 @@ TMP_ASM = $(SRC_ASM:.asm=.asm.o)
 OBJ_ASM = $(TMP_ASM:src/%=build/%)
 
 OBJ_FILES = $(FILES) #$(OBJ_C) $(OBJ_ASM)
+LINKER_FILES = $(shell find src/ -name "*.ld")
 BOOT_FILES = src/boot/boot.asm src/boot/gdt.inc src/boot/ata_lba_read.inc
 INCLUDES = -Isrc
 
@@ -53,11 +54,11 @@ $(TARGET): bin/boot.bin bin/kernel.bin
 	echo "Would you fancy some avocados?" > mnt/dummy.txt
 	umount -q mnt/ || /bin/true
 
-build/kernel/kernel.elf: $(OBJ_FILES) src/kernel/linker.ld build/kernel/kernel.asm.o
+build/kernel/kernel.elf: $(OBJ_FILES) $(LINKER_FILES) build/kernel/kernel.asm.o
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -T src/kernel/linker.ld $(OBJ_FILES) -o $@
 
-build/boot/boot.elf: build/boot/boot.asm.o src/boot/linker.ld
+build/boot/boot.elf: build/boot/boot.asm.o $(LINKER_FILES)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -T src/boot/linker.ld $< -o $@
 

@@ -1,19 +1,17 @@
 /* https://interrupt.memfault.com/blog/how-to-write-linker-scripts-for-firmware */
 
+SEARCH_DIR(src)
+INCLUDE linker_defines.ld
+
 ENTRY(_start_kernel) /* entry point */
 /*OUTPUT_FORMAT(binary)  /* plain binary, no elf, nothing fancy just yet */
 OUTPUT_FORMAT(elf32-i386)
 SECTIONS
 {
-    /* 
-    By convention, we name those sections as follow:
-        .text for code & constants
-        .bss for uninitialized data
-        .stack for our stack
-        .data for initialized data
-    */
-    . = 1M;
+    . = __KERNEL_32_LOAD_ADDRESS__;
+
     start = .;
+
     .text : {
         build/kernel/kernel.asm.o(.text);
         . = ALIGN(512);

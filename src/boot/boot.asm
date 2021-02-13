@@ -3,8 +3,8 @@
 section .text
 [BITS 16] ; 16 bit code (for the assembler)
 
-;extern KERNEL_32_BUFFER
-KERNEL_32_BUFFER equ 0x0100000 ; 1MB
+extern __KERNEL_32_LOAD_ADDRESS__
+;KERNEL_32_BUFFER equ 0x0100000 ; 1MB
 ; account for the BIOS Parameter block BPB
 ; https://wiki.osdev.org/FAT#BPB_.28BIOS_Parameter_Block.29
 
@@ -77,9 +77,9 @@ load32:
 
     mov eax, 1 ; sector 0 is the boot sector, we want to load from sector 1
     mov ecx, 100 ; 100 sectors
-    mov edi, KERNEL_32_BUFFER
+    mov edi, __KERNEL_32_LOAD_ADDRESS__
     call ata_lba_read
-    jmp CODE_SEG:KERNEL_32_BUFFER
+    jmp CODE_SEG:__KERNEL_32_LOAD_ADDRESS__
 
 %include "ata_lba_read.inc"
 ;times 510 - ($ - $$) db 0 ; fill 510 bytes as 0 (510 - (current_addr - begin)))
