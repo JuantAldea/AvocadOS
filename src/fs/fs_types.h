@@ -1,17 +1,13 @@
 #ifndef __FS_TYPES_H__
 #define __FS_TYPES_H__
-
-struct disk;
-
-enum seek_operation
-{
+/*
+enum seek_operation {
     SEEK_SET = 0,
     SEEK_CUR,
     SEEK_END,
 };
 
-enum fopen_mode
-{
+enum fopen_mode {
     OPEN_MODE_READ = 0,
     OPEN_MODE_WRITE,
     OPEN_MODE_RW,
@@ -27,8 +23,7 @@ typedef int (*FS_STAT)(struct disk *disk);
 typedef int (*FS_LINK)(struct disk *disk);
 typedef int (*FS_UNLINK)(struct disk *disk);
 
-struct filesystem_operations
-{
+struct filesystem_operations {
     FS_RESOLVE resolve;
     FS_OPEN open;
     FS_CLOSE close;
@@ -40,11 +35,10 @@ struct filesystem_operations
     FS_UNLINK unlink;
 };
 
-struct file_descriptor
-{
+struct file_descriptor {
     struct disk *disk;
     struct path_root *path;
     void *private_data;
 };
-
+*/
 #endif

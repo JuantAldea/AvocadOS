@@ -1,6 +1,7 @@
 #include "disk_stream.h"
 #include "../memory/memory.h"
 #include "../memory/kheap.h"
+#include "disk.h"
 
 int diskstream_seek(struct disk_stream *stream, size_t ppos)
 {
@@ -31,12 +32,12 @@ int diskstream_read(struct disk_stream *stream, void *buffer, int count)
     while (read_so_far < count) {
         const int ret = disk_read_block(stream->disk, sector, 1, sector_buffer);
 
-        if(ret) {
+        if (ret) {
             return ret;
         }
 
         size_t to_copy = count < (DISK_SECTOR_SIZE - offset) ? count : (DISK_SECTOR_SIZE - offset);
-        memcpy(buffer + read_so_far, sector_buffer + offset, to_copy);
+        memcpy(buffer + read_so_far, sector_buffer + offset, to_copy); // NOLINT
         read_so_far += to_copy;
         // there could be offset only for the first chunk read
         offset = 0;

@@ -1,12 +1,12 @@
 #ifndef _DISK_STREAM_H
 #define _DISK_STREAM_H
 #include <stddef.h>
-#include "disk.h"
 
-struct disk_stream
-{
+struct disk;
+
+struct disk_stream {
     size_t ppos;
-    struct disk* disk;
+    struct disk *disk;
 };
 
 struct disk_stream *diskstream_new(int disk_id);

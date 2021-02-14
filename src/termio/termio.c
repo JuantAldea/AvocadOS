@@ -10,14 +10,14 @@ uint16_t terminal_make_char(const char c, const char colour)
     return (colour << 8) | c;
 }
 
-void terminal_init ()
+void terminal_init()
 {
-    video_memory = (uint16_t *) (0xb8000);
+    video_memory = (uint16_t *)(0xb8000);
     terminal_row = 0;
     terminal_column = 0;
     uint16_t filler_char = terminal_make_char(' ', 0);
     for (uint8_t y = 0; y < VGA_HEIGHT; ++y) {
-        for (uint8_t  x = 0; x < VGA_WIDTH; ++x) {
+        for (uint8_t x = 0; x < VGA_WIDTH; ++x) {
             terminal_print_char_x_y(filler_char, x, y);
         }
     }
@@ -38,8 +38,7 @@ void terminal_put_char(const uint8_t character, uint8_t colour)
 
     terminal_print_char_x_y(terminal_make_char(character, colour), terminal_column++, terminal_row);
 
-    if (terminal_column == VGA_WIDTH)
-    {
+    if (terminal_column == VGA_WIDTH) {
         terminal_column = 0;
         terminal_row = (terminal_row + 1) % VGA_HEIGHT;
     }
@@ -48,7 +47,7 @@ void terminal_put_char(const uint8_t character, uint8_t colour)
 void terminal_print_string_x_y(const char *str, const char colour, const uint8_t x, const uint8_t y)
 {
     size_t index = y * VGA_WIDTH + x;
-    while(*str) {
+    while (*str) {
         video_memory[index++] = terminal_make_char(*str++, colour);
         index %= (VGA_WIDTH * VGA_HEIGHT);
     }
@@ -56,12 +55,12 @@ void terminal_print_string_x_y(const char *str, const char colour, const uint8_t
 
 void terminal_put_str(const char *str, const char colour)
 {
-   while(*str) {
-       terminal_put_char(*str++, colour);
+    while (*str) {
+        terminal_put_char(*str++, colour);
     }
 }
 
-void print(const char * const str)
+void print(const char *const str)
 {
     terminal_put_str(str, 15);
 }

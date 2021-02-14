@@ -6,10 +6,9 @@
 #include "../status.h"
 #include "../fs/vfs.h"
 
-
 struct disk disks[1];
 
-int disk_read_sector(const struct disk * const disk, const int lba, const int n, void * const buf)
+int disk_read_sector(const struct disk *const disk, const int lba, const int n, void *const buf)
 {
     outb(0x1F6, (lba >> 24) | disk->port);
     outb(0x1F2, n);
@@ -24,32 +23,33 @@ int disk_read_sector(const struct disk * const disk, const int lba, const int n,
         uint8_t status;
 
         do {
-           status = insb(0x1F7);
+            status = insb(0x1F7);
         } while ((status & BUSY_BIT) || !(status & DRQ_BIT));
 
         for (int i = 0; i < 256; ++i) {
             *ptr++ = insw(0x1F0);
         }
     }
+
     return 0;
 }
 
 void disk_init()
 {
-    memset(&disks, 0, sizeof(disks));
+    memset(&disks, 0, sizeof(disks)); // NOLINT
     disks[0].type = DISK_TYPE_PHYSICAL;
     disks[0].sector_size = DISK_SECTOR_SIZE;
     disks[0].port = ATA_MASTER;
     disks[0].id = 0;
-    disks[0].fs_operations = vfs_discover_fs(&disks[0]);
+    disks[0].fs_operations = vfs_probe_filesystem(&disks[0]);
 }
 
-struct disk* disk_get(int disk_index)
+struct disk *disk_get(int disk_index)
 {
     return !disk_index ? disks : NULL;
 }
 
-int disk_read_block(const struct disk * const disk, const unsigned int lba, const int n, void * const buffer)
+int disk_read_block(const struct disk *const disk, const unsigned int lba, const int n, void *const buffer)
 {
     if (disk != &disks[0]) {
         return -EIO;

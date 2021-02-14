@@ -10,13 +10,14 @@ struct heap_table kheap_table;
 
 void kheap_init()
 {
-    kheap_table.entries  = (HEAP_TABLE_ENTRY*) KERNEL_HEAP_TABLE_ADDRESS;
+    kheap_table.entries = (HEAP_TABLE_ENTRY *)KERNEL_HEAP_TABLE_ADDRESS;
     kheap_table.len = KERNEL_HEAP_SIZE / KERNEL_HEAP_BLOCK_SIZE;
-    void *end  = (void*)(KERNEL_HEAP_ADDRESS + KERNEL_HEAP_SIZE);
-    if (heap_create(&kernel_heap, (void*)KERNEL_HEAP_ADDRESS, end, &kheap_table)){
+    void *end = (void *)(KERNEL_HEAP_ADDRESS + KERNEL_HEAP_SIZE);
+    if (heap_create(&kernel_heap, (void *)KERNEL_HEAP_ADDRESS, end, &kheap_table)) {
         print("Error creating kheap\n");
-        //PANIC
-        trap: goto trap;
+    //PANIC
+    trap:
+        goto trap;
     }
 }
 
@@ -33,7 +34,7 @@ void *kzalloc(size_t size)
         return NULL;
     }
 
-    memset(ptr, 0, size);
+    memset(ptr, 0, size); // NOLINT
     return ptr;
 }
 

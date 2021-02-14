@@ -1,6 +1,6 @@
 #include "string.h"
 
-size_t strlen(const char  * const str)
+size_t strlen(const char *const str)
 {
     size_t len = 0;
     while (str[len]) {
@@ -10,17 +10,18 @@ size_t strlen(const char  * const str)
     return len;
 }
 
-size_t strnlen(const char  * const str, size_t max_len)
+size_t strnlen(const char *const str, size_t max_len)
 {
     size_t len = 0;
-    while (len < max_len && str[len++] != '\0') { ; }
+    while (len < max_len && str[len++] != '\0') {
+        ;
+    }
     return len;
 }
 
-
 int strcmp(const char *s1, const char *s2)
 {
-    while(*s1 && *s2) {
+    while (*s1 && *s2) {
         if (*s1 != *s2) {
             break;
         }
@@ -33,7 +34,7 @@ int strcmp(const char *s1, const char *s2)
 int strncmp(const char *s1, const char *s2, size_t n)
 {
     size_t i = 0;
-    while(*s1 && *s2 && i < n) {
+    while (*s1 && *s2 && i < n) {
         if (*s1 != *s2) {
             break;
         }
@@ -72,7 +73,9 @@ void itoa(const int c, char *buf)
         buf[1] = '\0';
         return;
     }
+
     int is_negative = 0;
+
     if (shifter < 0) {
         ++ptr;
         is_negative = 1;
@@ -85,7 +88,7 @@ void itoa(const int c, char *buf)
         ++ptr;
     } while (shifter);
 
-    *(ptr--)  = '\0';
+    *(ptr--) = '\0';
 
     shifter = is_negative ? -c : c;
 
@@ -95,8 +98,7 @@ void itoa(const int c, char *buf)
         shifter /= 10;
     } while (shifter);
 
-    if (is_negative){
+    if (is_negative) {
         *ptr = '-';
     }
-
 }

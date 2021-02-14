@@ -4,6 +4,7 @@
 #include "../disk/disk.h"
 #include "../kernel/kernel.h"
 #include "fat16.h"
+#include "file.h"
 
 struct filesystem_operations *registered_filesystems[10];
 
@@ -70,10 +71,10 @@ int vfs_register_fs(struct filesystem_operations *operations)
     return -EIO;
 }
 
-struct filesystem_operations *vfs_discover_fs(struct disk *disk)
+struct filesystem_operations *vfs_probe_filesystem(struct disk *disk)
 {
     struct filesystem_operations *fs_op = registered_filesystems[0];
-    for (; fs_op; ++fs_op){
+    for (; fs_op; ++fs_op) {
         if (!fs_op->resolve(disk)) {
             return fs_op;
         }
