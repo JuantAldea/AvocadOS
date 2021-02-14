@@ -27,7 +27,9 @@ void print_path(struct path_root *path)
 {
     struct path_part *part = path->first;
     print("Drive: ");
-    print_char(digit_to_char(path->drive_number));
+    char buffer[10];
+    itoa(path->drive_number, buffer);
+    print(buffer);
     print_char('\n');
     while (part) {
         print(part->part);
@@ -40,40 +42,37 @@ void kernel_main(void)
 {
     terminal_init();
     kernel_splash();
-    print(" Starting...\n\n");
 
     kheap_init();
 
+    print("Init kheap\n");
+
     idt_init();
+    print("Setup interrupts\n");
 
-    kernel_chunk = page_directory_init_4gb(PAGING_WRITABLE_PAGE
-                    | PAGING_PRESENT
-                    | PAGING_ACCESS_FROM_ALL);
+    kernel_chunk = page_directory_init_4gb(PAGING_WRITABLE_PAGE | PAGING_PRESENT | PAGING_ACCESS_FROM_ALL);
     paging_switch_directory(kernel_chunk);
-    print(" Enable paging\n");
-    char *page_ptr = kzalloc(4096);
+    enable_paging();
 
-    // map the region pointed by page_ptr to virtual addr 0x1000
+    print("Enabled paging\n");
 
-    paging_map_v_addr(kernel_chunk, (void*) 0x1000, page_ptr,
-                            PAGING_ACCESS_FROM_ALL
-                            | PAGING_PRESENT
-                            | PAGING_WRITABLE_PAGE);
-
-    // also to addr 0x2000
-    paging_map_v_addr(kernel_chunk, (void*) 0x2000, page_ptr,
-                            PAGING_ACCESS_FROM_ALL
-                            | PAGING_PRESENT
-                            | PAGING_WRITABLE_PAGE);
-
-    print(" Init volume: ");
+    print("Init volume: ");
     vfs_init();
     disk_init();
 
-    print(" Enable interrupts\n");
     enable_interrupts();
+    print("Enabled interrupts\n");
 
-    print("\n\n Done, for now.");
+    size_t in_use = kheap_count_used_blocks();
+    char buffer[10];
+
+    // 1 handler + 1 Table Directory + 1024 Page Tables = 1026
+    itoa(in_use - 1026, buffer);
+    print("\nBlocks in use at exit: ");
+    print(buffer);
+    print_char('\n');
+
+    print("\n\nDone, for now\n");
 trap:
     goto trap;
 }
