@@ -2,7 +2,6 @@
 FILES = build/kernel/kernel.o \
 		build/idt/idt.asm.o \
 		build/idt/idt.o \
-		build/memory/memory.o \
 		build/termio/termio.o \
 		build/io/io.asm.o \
 		build/memory/heap.o \
@@ -34,7 +33,7 @@ CFLAGS = -ggdb3 -ffreestanding -falign-jumps -falign-functions -falign-labels -f
 	-fstrength-reduce -fomit-frame-pointer -finline-functions -Wno-unused-function \
 	-fno-builtin -Wno-unused-label -Wno-cpp -Wno-unused-parameter \
 	-nostdlib -nostartfiles -nodefaultlibs \
-	-Wall -Wextra -Werror -O0 -Iinc -m32 \
+	-Wall -Wextra -Werror -O0 -Iinc \
 	-std=gnu11
 
 CC = i686-elf-gcc
@@ -58,11 +57,11 @@ $(TARGET): bin/boot.bin bin/kernel.bin
 
 build/kernel/kernel.elf: $(OBJ_FILES) $(LINKER_FILES) build/kernel/kernel.asm.o
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) -T src/kernel/linker.ld $(OBJ_FILES) -o $@
+	$(CC) $(CFLAGS) -T src/kernel/linker.ld $(OBJ_FILES) -lgcc -o $@
 
 build/boot/boot.elf: build/boot/boot.asm.o $(LINKER_FILES)
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) -T src/boot/linker.ld $< -o $@
+	$(CC) $(CFLAGS) -T src/boot/linker.ld -lgcc $< -o $@
 
 bin/kernel.bin: build/kernel/kernel.elf
 	@mkdir -p $(@D)

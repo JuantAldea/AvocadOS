@@ -1,7 +1,6 @@
 #include "kernel.h"
 #include "../termio/termio.h"
 #include "../idt/idt.h"
-#include "../memory/memory.h"
 #include "../memory/kheap.h"
 #include "../io/io.h"
 #include "../memory/paging.h"

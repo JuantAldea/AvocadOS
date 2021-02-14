@@ -1,7 +1,7 @@
 #include <stddef.h>
 
 #include "disk.h"
-#include "../memory/memory.h"
+#include "../string/string.h"
 #include "../io/io.h"
 #include "../status.h"
 #include "../fs/vfs.h"

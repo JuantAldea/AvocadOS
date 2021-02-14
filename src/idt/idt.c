@@ -1,6 +1,6 @@
 #include "../config.h"
 #include "idt.h"
-#include "../memory/memory.h"
+#include "../string/string.h"
 #include "../termio/termio.h"
 #include "../io/io.h"
 

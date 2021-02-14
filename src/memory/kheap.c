@@ -2,7 +2,6 @@
 #include "heap.h"
 #include "../config.h"
 #include "../termio/termio.h"
-#include "memory.h"
 #include "../string/string.h"
 
 struct heap kernel_heap;

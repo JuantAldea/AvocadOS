@@ -1,5 +1,5 @@
 #include "disk_stream.h"
-#include "../memory/memory.h"
+#include "../string/string.h"
 #include "../memory/kheap.h"
 #include "disk.h"
 

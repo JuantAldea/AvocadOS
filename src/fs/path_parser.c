@@ -2,9 +2,7 @@
 
 #include "../config.h"
 #include "../string/string.h"
-#include "../memory/memory.h"
 #include "../memory/kheap.h"
-
 #include "../termio/termio.h"
 
 static int pathparser_path_get_drive(const char *const path);

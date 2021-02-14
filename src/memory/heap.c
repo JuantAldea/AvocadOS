@@ -5,7 +5,6 @@
 #include "heap.h"
 #include "../config.h"
 #include "../status.h"
-#include "memory.h"
 #include "../termio/termio.h"
 #include "../string/string.h"
 
