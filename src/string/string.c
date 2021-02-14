@@ -62,3 +62,41 @@ char digit_to_char(const int c)
 
     return '0' + c;
 }
+
+void itoa(const int c, char *buf)
+{
+    int shifter = c;
+    char *ptr = buf;
+    if (shifter == 0) {
+        buf[0] = '0';
+        buf[1] = '\0';
+        return;
+    }
+    int is_negative = 0;
+    if (shifter < 0) {
+        ++ptr;
+        is_negative = 1;
+        shifter *= -1;
+    }
+
+    //no reverse string for now
+    do {
+        shifter /= 10;
+        ++ptr;
+    } while (shifter);
+
+    *(ptr--)  = '\0';
+
+    shifter = is_negative ? -c : c;
+
+    do {
+        int digit = shifter % 10;
+        *(ptr--) = digit_to_char(digit);
+        shifter /= 10;
+    } while (shifter);
+
+    if (is_negative){
+        *ptr = '-';
+    }
+
+}
