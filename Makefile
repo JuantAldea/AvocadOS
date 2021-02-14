@@ -32,7 +32,7 @@ INCLUDES = -Isrc
 CFLAGS = -ggdb3 -ffreestanding -falign-jumps -falign-functions -falign-labels -falign-loops \
 	-fstrength-reduce -fomit-frame-pointer -finline-functions -Wno-unused-function \
 	-fno-builtin -Wno-unused-label -Wno-cpp -Wno-unused-parameter \
-	-nostdlib -nostartfiles -nodefaultlibs \
+	-nostdlib \
 	-Wall -Wextra -Werror -O0 -Iinc \
 	-std=gnu11
 
