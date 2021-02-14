@@ -29,15 +29,16 @@ LINKER_FILES = $(shell find src/ -name "*.ld")
 BOOT_FILES = src/boot/boot.asm src/boot/gdt.inc src/boot/ata_lba_read.inc
 INCLUDES = -Isrc
 
-CFLAGS = -ggdb3 -ffreestanding -falign-jumps -falign-functions -falign-labels -falign-loops \
-	-fstrength-reduce -fomit-frame-pointer -finline-functions -Wno-unused-function \
-	-fno-builtin -Wno-unused-label -Wno-cpp -Wno-unused-parameter \
-	-nostdlib \
-	-Wall -Wextra -Werror -O0 -Iinc \
-	-std=gnu11
+CFLAGS = -ggdb3 -ffreestanding -nostdlib \
+	-falign-jumps -falign-functions -falign-labels -falign-loops \
+	-fstrength-reduce -fomit-frame-pointer -finline-functions \
+	-std=gnu11 -O0 -Iinc \
+	-Wall -Wextra -Werror \
+	-Wno-unused-function -Wno-unused-label -Wno-cpp -Wno-unused-parameter
 
 CC = i686-elf-gcc
 LD = i686-elf-ld
+
 TARGET = bin/image.bin
 QEMU_RUN_COMMAND = qemu-system-i386 -hda $(TARGET)
 
