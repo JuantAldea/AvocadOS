@@ -72,37 +72,37 @@ bin/boot.bin: build/boot/boot.elf
 	@mkdir -p $(@D)
 	objcopy -O binary $< $@
 
+build/kernel/%.o: src/kernel/%.c src/kernel/%.h
+	@mkdir -p $(@D)
+	$(CC) $(INCLUDES) -I$(dir $<) $(CFLAGS) -c $< -o $@
+
+build/idt/%.o: src/idt/%.c src/idt/%.h
+	@mkdir -p $(@D)
+	$(CC) $(INCLUDES) -I$(dir $<) $(CFLAGS) -c $< -o $@
+
+build/termio/%.o: src/termio/%.c src/termio/%.h
+	@mkdir -p $(@D)
+	$(CC) $(INCLUDES) -I$(dir $<) $(CFLAGS) -c $< -o $@
+
+build/memory/%.o: src/memory/%.c src/memory/%.h
+	@mkdir -p $(@D)
+	$(CC) $(INCLUDES) -I$(dir $<) $(CFLAGS) -c $< -o $@
+
+build/disk/%.o: src/disk/%.c src/disk/%.h
+	@mkdir -p $(@D)
+	$(CC) $(INCLUDES) -I$(dir $<) $(CFLAGS) -c $< -o $@
+
+build/fs/%.o: src/fs/%.c src/fs/%.h
+	@mkdir -p $(@D)
+	$(CC) $(INCLUDES) -I$(dir $<) $(CFLAGS) -c $< -o $@
+
+build/string/%.o: src/string/%.c src/string/%.h
+	@mkdir -p $(@D)
+	$(CC) $(INCLUDES) -I$(dir $<) $(CFLAGS) -c $< -o $@
+
 build/boot/boot.asm.o: $(BOOT_FILES)
 	@mkdir -p $(@D)
 	nasm -f elf -g -F dwarf -i $(dir $<) src/boot/boot.asm -o $@
-
-build/kernel/%.o: src/kernel/%.c
-	@mkdir -p $(@D)
-	$(CC) $(INCLUDES) -I$(dir $<) $(CFLAGS) -c $< -o $@
-
-build/idt/%.o: src/idt/%.c
-	@mkdir -p $(@D)
-	$(CC) $(INCLUDES) -I$(dir $<) $(CFLAGS) -c $< -o $@
-
-build/termio/%.o: src/termio/%.c
-	@mkdir -p $(@D)
-	$(CC) $(INCLUDES) -I$(dir $<) $(CFLAGS) -c $< -o $@
-
-build/memory/%.o: src/memory/%.c
-	@mkdir -p $(@D)
-	$(CC) $(INCLUDES) -I$(dir $<) $(CFLAGS) -c $< -o $@
-
-build/disk/%.o: src/disk/%.c
-	@mkdir -p $(@D)
-	$(CC) $(INCLUDES) -I$(dir $<) $(CFLAGS) -c $< -o $@
-
-build/fs/%.o: src/fs/%.c
-	@mkdir -p $(@D)
-	$(CC) $(INCLUDES) -I$(dir $<) $(CFLAGS) -c $< -o $@
-
-build/string/%.o: src/string/%.c
-	@mkdir -p $(@D)
-	$(CC) $(INCLUDES) -I$(dir $<) $(CFLAGS) -c $< -o $@
 
 build/memory/%.asm.o: src/memory/%.asm
 	@mkdir -p $(@D)
