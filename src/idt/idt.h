@@ -24,7 +24,7 @@ struct idt_desc {
 
 struct idtr_desc {
     uint16_t limit; //table length - 1 byte
-    uint32_t base; //base pointer of the IDT
+    uintptr_t base; //base pointer of the IDT
     //struct idt_desc *base; //base pointer of the IDT
 
 } __attribute__((packed));

@@ -12,10 +12,10 @@
 //#define COUNT_ALLOCATIONS
 //#define COUNT_FREES
 
-static int heap_validate_table (void *ptr, void *end, struct heap_table *table)
+static int heap_validate_table(void *ptr, void *end, struct heap_table *table)
 {
     const size_t table_size = (size_t)(end - ptr);
-    const size_t total_blocks = table_size  / KERNEL_HEAP_BLOCK_SIZE;
+    const size_t total_blocks = table_size / KERNEL_HEAP_BLOCK_SIZE;
     if (table->len != total_blocks) {
         return -EINVAL;
     }
@@ -25,7 +25,7 @@ static int heap_validate_table (void *ptr, void *end, struct heap_table *table)
 
 static bool heap_validate_alignment(void *ptr)
 {
-    return ((uint32_t) ptr % KERNEL_HEAP_BLOCK_SIZE) == 0;
+    return ((uintptr_t)ptr % KERNEL_HEAP_BLOCK_SIZE) == 0;
 }
 
 int heap_create(struct heap *heap, void *ptr, void *end_addr, struct heap_table *heap_table)
@@ -34,22 +34,21 @@ int heap_create(struct heap *heap, void *ptr, void *end_addr, struct heap_table 
         return -EINVAL;
     }
 
-    memset(heap, 0, sizeof(struct heap));
+    memset(heap, 0, sizeof(struct heap)); // NOLINT
     heap->base_addr = ptr;
     heap->table = heap_table;
-
 
     if (heap_validate_table(ptr, end_addr, heap_table)) {
         return -EINVAL;
     }
 
     const size_t table_size = sizeof(HEAP_TABLE_ENTRY) * heap_table->len;
-    memset(heap_table->entries, HEAP_MEMORY_BLOCK_FREE, table_size);
+    memset(heap_table->entries, HEAP_MEMORY_BLOCK_FREE, table_size); // NOLINT
 
     return KERNEL_OK;
 }
 
-size_t size_to_nblocks (size_t size)
+size_t size_to_nblocks(size_t size)
 {
     return size / KERNEL_HEAP_BLOCK_SIZE + ((size % KERNEL_HEAP_BLOCK_SIZE) ? 1 : 0);
 }
@@ -61,7 +60,6 @@ int find_first_block(struct heap *heap, size_t n_blocks)
 
     int remaining_blocks = n_blocks;
     int found_block = -1;
-
 
     for (size_t i = 0; (i < heap_table->len) && remaining_blocks; ++i) {
         if (BLOCK_TEST_TAKEN(heap_entries[i])) {
@@ -77,7 +75,7 @@ int find_first_block(struct heap *heap, size_t n_blocks)
         --remaining_blocks;
     }
 
-    if (found_block == -1){
+    if (found_block == -1) {
         return -ENOMEM;
     }
 
@@ -101,12 +99,12 @@ void heap_reserve_blocks(struct heap *heap, size_t first_block, size_t n_blocks)
     BLOCK_SET_NO_NEXT(heap_entries[end_block - 1]);
 }
 
-void *heap_block_to_addr(const struct heap * const heap, size_t block_index)
+void *heap_block_to_addr(const struct heap *const heap, size_t block_index)
 {
     return heap->base_addr + block_index * KERNEL_HEAP_BLOCK_SIZE;
 }
 
-size_t heap_addr_to_block(const struct heap * const heap, void *ptr)
+size_t heap_addr_to_block(const struct heap *const heap, void *ptr)
 {
     return (size_t)(ptr - heap->base_addr) / KERNEL_HEAP_BLOCK_SIZE;
 }
@@ -159,7 +157,7 @@ void heap_free(struct heap *heap, void *ptr)
     size_t released_blocks = 1;
 #endif
     BLOCK_SET_FREE(heap_entries[block++]);
-    while(!BLOCK_TEST_FREE(heap_entries[block]) && !BLOCK_TEST_FIRST(heap_entries[block])) {
+    while (!BLOCK_TEST_FREE(heap_entries[block]) && !BLOCK_TEST_FIRST(heap_entries[block])) {
         BLOCK_SET_FREE(heap_entries[block]);
         ++block;
 #ifdef COUNT_FREES
