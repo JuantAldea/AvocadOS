@@ -3,6 +3,10 @@
 #include "fs_types.h"
 #include "../disk/disk.h"
 
+#define FAT16_SIGNATURE 0x29
+#define FAT16_SYSTEM_ID "FAT16   "
+#define FAT16_SYSTEM_ID_LEN 8
+
 struct fat_header
 {
     uint8_t jump_nop[3];
@@ -40,4 +44,5 @@ int fat16_link(struct disk *disk);
 int fat16_unlink(struct disk *disk);
 
 extern struct filesystem_operations fat16_operations;
+
 #endif

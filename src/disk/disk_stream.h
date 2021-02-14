@@ -9,7 +9,7 @@ struct disk_stream
     struct disk* disk;
 };
 
-struct disk_stream *diskstream_open(int disk_id);
+struct disk_stream *diskstream_new(int disk_id);
 void diskstream_close(struct disk_stream *stream);
 int diskstream_read(struct disk_stream *stream, void *buffer, int count);
 int diskstream_seek(struct disk_stream *stream, size_t ppos);

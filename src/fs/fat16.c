@@ -20,22 +20,28 @@ struct filesystem_operations fat16_operations =
 
 int fat16_resolve(struct disk *disk)
 {
-    struct disk_stream *stream = diskstream_open(disk->id);
+    struct disk_stream *stream = diskstream_new(disk->id);
 
     struct fat_header header = {0};
 
-    diskstream_read(stream, &header, sizeof(struct fat_header));
+    if (diskstream_read(stream, &header, sizeof(struct fat_header)) < 0) {
+        return -EIO;
+    }
 
-    if (header.signature != 0x29){
+    if (header.signature != FAT16_SIGNATURE){
         return -EMEDIUMTYPE;
     }
 
-    if (strncmp((char*)header.system_id_string, "FAT16   ", 8)) {
+    if (strncmp((char*)header.system_id_string, FAT16_SYSTEM_ID, FAT16_SYSTEM_ID_LEN)) {
         return -EMEDIUMTYPE;
     }
+
     print("Fat16 medium found. Disk #");
-    print_char(digit_to_char(disk->id));
+    char buffer[10];
+    itoa(disk->id, buffer);
+    print(buffer);
     print_char('\n');
+    diskstream_close(stream);
     return 0;
 }
 
