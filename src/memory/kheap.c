@@ -3,6 +3,7 @@
 #include "../config.h"
 #include "../termio/termio.h"
 #include "memory.h"
+#include "../string/string.h"
 
 struct heap kernel_heap;
 struct heap_table kheap_table;
@@ -44,4 +45,9 @@ void kfree(void *ptr)
 void *malloc(size_t size)
 {
     return kmalloc(size);
+}
+
+size_t kheap_count_used_blocks()
+{
+    return count_used_blocks(&kernel_heap);
 }

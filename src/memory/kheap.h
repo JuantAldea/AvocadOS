@@ -6,6 +6,6 @@ void kheap_init();
 void *kmalloc(size_t size);
 void *kzalloc(size_t size);
 void kfree(void *ptr);
-
+size_t kheap_count_used_blocks();
 void *malloc(size_t size);
 #endif

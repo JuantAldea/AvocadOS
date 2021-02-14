@@ -1,10 +1,16 @@
+#include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
+
 #include "heap.h"
 #include "../config.h"
 #include "../status.h"
 #include "memory.h"
-#include <stdint.h>
-#include <stddef.h>
-#include <stdbool.h>
+#include "../termio/termio.h"
+#include "../string/string.h"
+
+//#define COUNT_ALLOCATIONS
+//#define COUNT_FREES
 
 static int heap_validate_table (void *ptr, void *end, struct heap_table *table)
 {
@@ -114,6 +120,13 @@ void *heap_malloc_blocks(struct heap *heap, size_t n_blocks)
     }
 
     heap_reserve_blocks(heap, first_block, n_blocks);
+#ifdef COUNT_ALLOCATIONS
+    print("[HEAP] Reserved: ");
+    char buff[10];
+    itoa(n_blocks, buff);
+    print(buff);
+    print_char('\n');
+#endif
 
     return heap_block_to_addr(heap, first_block);
 }
@@ -142,10 +155,34 @@ void heap_free(struct heap *heap, void *ptr)
         //int?
         return;
     }
-
+#ifdef COUNT_FREES
+    size_t released_blocks = 1;
+#endif
     BLOCK_SET_FREE(heap_entries[block++]);
     while(!BLOCK_TEST_FREE(heap_entries[block]) && !BLOCK_TEST_FIRST(heap_entries[block])) {
         BLOCK_SET_FREE(heap_entries[block]);
         ++block;
+#ifdef COUNT_FREES
+        ++released_blocks;
+#endif
     }
+#ifdef COUNT_FREES
+    print("[HEAP] Released: ");
+    char buff[10];
+    itoa(released_blocks, buff);
+    print(buff);
+    print_char('\n');
+#endif
+}
+
+size_t count_used_blocks(struct heap *heap)
+{
+    struct heap_table *heap_table = heap->table;
+    size_t count = 0;
+    for (size_t i = 0; i < heap_table->len; ++i) {
+        if (BLOCK_TEST_TAKEN(heap_table->entries[i])) {
+            ++count;
+        }
+    }
+    return count;
 }
