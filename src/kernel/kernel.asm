@@ -18,7 +18,7 @@ _start_kernel:
     mov esp, ebp
 
     call remap_master_pic
-
+    xor ebp, ebp ; requiered for stack unwinding
     call kernel_main;
 
     jmp $ ;trap
