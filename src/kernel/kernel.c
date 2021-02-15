@@ -7,8 +7,10 @@
 #include "../disk/disk.h"
 #include "../disk/disk_stream.h"
 #include "../fs/path_parser.h"
-#include "../fs/vfs.h"
+#include "../fs/file_table.h"
 #include "../string/string.h"
+#include "../config.h"
+#include "../fs/file.h"
 
 void kernel_splash()
 {
@@ -56,12 +58,16 @@ void kernel_main(void)
     print("Enabled paging\n");
 
     print("Init volume: ");
-    vfs_init();
+
+    file_table_init();
+    fs_init();
     disk_init();
 
     enable_interrupts();
     print("Enabled interrupts\n");
 
+    char path[] = "0:/Compilers/Principles/Techniques/and/Tools";
+    fopen(path, OPEN_MODE_READ);
     size_t in_use = kheap_count_used_blocks();
     char buffer[10];
 

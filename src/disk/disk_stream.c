@@ -11,7 +11,7 @@ int diskstream_seek(struct disk_stream *stream, size_t ppos)
 
 struct disk_stream *diskstream_new(int disk_id)
 {
-    struct disk *disk = disk_get(disk_id);
+    struct disk_t *disk = disk_get(disk_id);
 
     if (!disk) {
         return NULL;

@@ -12,5 +12,5 @@
 
 #define MAX_PATH_LEN 250
 #define MAX_FILESYSTEMS 5
-
+#define MAX_OPEN_FILES 100
 #endif /* __CONFIG_H */

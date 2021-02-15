@@ -4,11 +4,11 @@
 #include "../string/string.h"
 #include "../io/io.h"
 #include "../status.h"
-#include "../fs/vfs.h"
+#include "../fs/file.h"
 
-struct disk disks[1];
+struct disk_t disks[1];
 
-int disk_read_sector(const struct disk *const disk, const int lba, const int n, void *const buf)
+int disk_read_sector(const struct disk_t *const disk, const int lba, const int n, void *const buf)
 {
     outb(0x1F6, (lba >> 24) | disk->port);
     outb(0x1F2, n);
@@ -41,15 +41,15 @@ void disk_init()
     disks[0].sector_size = DISK_SECTOR_SIZE;
     disks[0].port = ATA_MASTER;
     disks[0].id = 0;
-    disks[0].fs_operations = vfs_probe_filesystem(&disks[0]);
+    disks[0].fs_operations = fs_probe_fs(&disks[0]);
 }
 
-struct disk *disk_get(int disk_index)
+struct disk_t *disk_get(int disk_index)
 {
     return !disk_index ? disks : NULL;
 }
 
-int disk_read_block(const struct disk *const disk, const unsigned int lba, const int n, void *const buffer)
+int disk_read_block(const struct disk_t *const disk, const unsigned int lba, const int n, void *const buffer)
 {
     if (disk != &disks[0]) {
         return -EIO;

@@ -7,8 +7,11 @@
 #define FAT16_SYSTEM_ID "FAT16   "
 #define FAT16_SYSTEM_ID_LEN 8
 
-struct disk;
+
 enum fopen_mode;
+struct file_descriptor_t;
+struct path_part;
+struct disk_t;
 
 struct fat_header {
     uint8_t jump_nop[3];
@@ -34,16 +37,16 @@ struct fat_header {
     uint8_t system_id_string[8];
 } __attribute__((packed));
 
-int fat16_resolve(struct disk *disk);
-int fat16_open(struct disk *disk, enum fopen_mode mode);
-int fat16_close(struct disk *disk);
-int fat16_read(struct disk *disk);
-int fat16_write(struct disk *disk);
-int fat16_seek(struct disk *disk);
-int fat16_stat(struct disk *disk);
-int fat16_link(struct disk *disk);
-int fat16_unlink(struct disk *disk);
+int fat16_probe(struct disk_t *disk);
+void *fat16_open(struct disk_t *disk, struct path_part *path, enum fopen_mode mode);
+int fat16_close(struct disk_t *disk);
+int fat16_read(struct disk_t *disk);
+int fat16_write(struct disk_t *disk);
+int fat16_seek(struct disk_t *disk);
+int fat16_stat(struct disk_t *disk);
+int fat16_link(struct disk_t *disk);
+int fat16_unlink(struct disk_t *disk);
 
-extern struct filesystem_operations fat16_operations;
+extern struct filesystem_operations_t fat16_operations;
 
 #endif

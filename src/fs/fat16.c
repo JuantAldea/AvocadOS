@@ -4,22 +4,24 @@
 #include "../status.h"
 #include "../string/string.h"
 #include "../termio/termio.h"
-#include "vfs.h"
 #include "../disk/disk.h"
+#include "path_parser.h"
+#include "file.h"
 
-struct filesystem_operations fat16_operations = {
-    .resolve = fat16_resolve,
+struct filesystem_operations_t fat16_operations = {
+    .probe = fat16_probe,
     .open = fat16_open,
+    /*
     .close = fat16_close,
     .read = fat16_read,
     .write = fat16_write,
     .seek = fat16_seek,
     .stat = fat16_stat,
-    .link = fat16_link,
     .unlink = fat16_unlink,
+    */
 };
 
-int fat16_resolve(struct disk *disk)
+int fat16_probe(struct disk_t *disk)
 {
     struct disk_stream *stream = diskstream_new(disk->id);
 
@@ -46,50 +48,52 @@ int fat16_resolve(struct disk *disk)
     return 0;
 }
 
-int fat16_open(struct disk *disk, enum fopen_mode mode)
+void *fat16_open(struct disk_t *disk, struct path_part *path, enum fopen_mode mode)
 {
+    print("fopen fat16");
     (void)disk;
+    (void)path;
     (void)mode;
     return 0;
 }
 
-int fat16_close(struct disk *disk)
+int fat16_close(struct disk_t *disk)
 {
     (void)disk;
     return 0;
 }
 
-int fat16_read(struct disk *disk)
+int fat16_read(struct disk_t *disk)
 {
     (void)disk;
     return 0;
 }
 
-int fat16_write(struct disk *disk)
+int fat16_write(struct disk_t *disk)
 {
     (void)disk;
     return 0;
 }
 
-int fat16_seek(struct disk *disk)
+int fat16_seek(struct disk_t *disk)
 {
     (void)disk;
     return 0;
 }
 
-int fat16_stat(struct disk *disk)
+int fat16_stat(struct disk_t *disk)
 {
     (void)disk;
     return 0;
 }
 
-int fat16_link(struct disk *disk)
+int fat16_link(struct disk_t *disk)
 {
     (void)disk;
     return 0;
 }
 
-int fat16_unlink(struct disk *disk)
+int fat16_unlink(struct disk_t *disk)
 {
     (void)disk;
     return 0;
