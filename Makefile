@@ -39,26 +39,26 @@ $(TARGET): bin/boot.bin bin/kernel.bin
 	echo "Would you fancy some avocados?" > mnt/dummy.txt
 	fusermount -u -q -z mnt/ || /bin/true
 
-define ASM_RULE
+define BUILD_RULE
 $(1): $(2) $(3)
 	@mkdir -p $(dir $(1))
-	nasm -f elf -g -F dwarf -i $(dir $(2)) $(2) -o $(1)
+
+	$(eval ASM = $(findstring .asm, $(1)))
+
+	$(if $(ASM),
+		nasm -f elf -g -F dwarf -i $(dir $(2)) $(2) -o $(1), \
+		$(CC) $(INCLUDES) -I$(dir $2) $(CFLAGS) -c $(2) -o $(1) \
+	)
 endef
 
 $(foreach file, $(OBJ_ASM), \
 	$(eval SRC_FILE = $(file:build/%=src/%)) \
-	$(eval $(call ASM_RULE, $(file), $(SRC_FILE:%.asm.o=%.asm))) \
+	$(eval $(call BUILD_RULE, $(file), $(SRC_FILE:%.asm.o=%.asm))) \
 )
-
-define C_RULE
-$(1): $(2) $(3)
-	@mkdir -p $(dir $(1))
-	$(CC) $(INCLUDES) -I$(dir $2) $(CFLAGS) -c $(2) -o $(1)
-endef
 
 $(foreach file, $(OBJ_C), \
 	$(eval SRC_FILE = $(file:build/%=src/%)) \
-	$(eval $(call C_RULE, $(file), $(SRC_FILE:%.o=%.c), $(SRC_FILE:%.o=%.h))) \
+	$(eval $(call BUILD_RULE, $(file), $(SRC_FILE:%.o=%.c), $(SRC_FILE:%.o=%.h))) \
 )
 
 build/kernel/kernel.elf: $(OBJ_FILES) $(LINKER_FILES) build/kernel/kernel.asm.o
