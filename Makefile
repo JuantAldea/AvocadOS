@@ -1,22 +1,5 @@
-
-FILES = build/kernel/kernel.o \
-		build/idt/idt.asm.o \
-		build/idt/idt.o \
-		build/termio/termio.o \
-		build/io/io.asm.o \
-		build/memory/heap.o \
-		build/memory/kheap.o \
-		build/memory/paging.asm.o \
-		build/memory/paging.o \
-		build/disk/disk.o \
-		build/disk/disk_stream.o \
-		build/string/string.o \
-		build/fs/path_parser.o \
-		build/fs/vfs.o \
-		build/fs/fat16.o \
-		#build/kernel/kernel.asm.o \
-
 BOOT_FILES = $(shell find src/boot/)
+SRC_C = $(shell find src -name "*.c")
 TMP_C = $(SRC_C:.c=.o)
 OBJ_C = $(TMP_C:src/%=build/%)
 
@@ -24,7 +7,7 @@ SRC_ASM = $(shell find src -path src/boot -prune -false -o -name "*.asm")
 TMP_ASM = $(SRC_ASM:.asm=.asm.o)
 OBJ_ASM = $(TMP_ASM:src/%=build/%)
 
-OBJ_FILES = $(FILES) #$(OBJ_C) $(OBJ_ASM)
+OBJ_FILES = $(OBJ_C) $(OBJ_ASM)
 LINKER_FILES = $(shell find src/ -name "*.ld")
 BOOT_FILES = src/boot/boot.asm src/boot/gdt.inc src/boot/ata_lba_read.inc
 INCLUDES = -Isrc
@@ -56,6 +39,28 @@ $(TARGET): bin/boot.bin bin/kernel.bin
 	echo "Would you fancy some avocados?" > mnt/dummy.txt
 	fusermount -u -q -z mnt/ || /bin/true
 
+define ASM_RULE
+$(1): $(2) $(3)
+	@mkdir -p $(dir $(1))
+	nasm -f elf -g -F dwarf -i $(dir $(2)) $(2) -o $(1)
+endef
+
+$(foreach file, $(OBJ_ASM), \
+	$(eval SRC_FILE = $(file:build/%=src/%)) \
+	$(eval $(call ASM_RULE, $(file), $(SRC_FILE:%.asm.o=%.asm))) \
+)
+
+define C_RULE
+$(1): $(2) $(3)
+	@mkdir -p $(dir $(1))
+	$(CC) $(INCLUDES) -I$(dir $2) $(CFLAGS) -c $(2) -o $(1)
+endef
+
+$(foreach file, $(OBJ_C), \
+	$(eval SRC_FILE = $(file:build/%=src/%)) \
+	$(eval $(call C_RULE, $(file), $(SRC_FILE:%.o=%.c), $(SRC_FILE:%.o=%.h))) \
+)
+
 build/kernel/kernel.elf: $(OBJ_FILES) $(LINKER_FILES) build/kernel/kernel.asm.o
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -T src/kernel/linker.ld $(OBJ_FILES) -lgcc -o $@
@@ -72,53 +77,9 @@ bin/boot.bin: build/boot/boot.elf
 	@mkdir -p $(@D)
 	objcopy -O binary $< $@
 
-build/kernel/%.o: src/kernel/%.c src/kernel/%.h
-	@mkdir -p $(@D)
-	$(CC) $(INCLUDES) -I$(dir $<) $(CFLAGS) -c $< -o $@
-
-build/idt/%.o: src/idt/%.c src/idt/%.h
-	@mkdir -p $(@D)
-	$(CC) $(INCLUDES) -I$(dir $<) $(CFLAGS) -c $< -o $@
-
-build/termio/%.o: src/termio/%.c src/termio/%.h
-	@mkdir -p $(@D)
-	$(CC) $(INCLUDES) -I$(dir $<) $(CFLAGS) -c $< -o $@
-
-build/memory/%.o: src/memory/%.c src/memory/%.h
-	@mkdir -p $(@D)
-	$(CC) $(INCLUDES) -I$(dir $<) $(CFLAGS) -c $< -o $@
-
-build/disk/%.o: src/disk/%.c src/disk/%.h
-	@mkdir -p $(@D)
-	$(CC) $(INCLUDES) -I$(dir $<) $(CFLAGS) -c $< -o $@
-
-build/fs/%.o: src/fs/%.c src/fs/%.h
-	@mkdir -p $(@D)
-	$(CC) $(INCLUDES) -I$(dir $<) $(CFLAGS) -c $< -o $@
-
-build/string/%.o: src/string/%.c src/string/%.h
-	@mkdir -p $(@D)
-	$(CC) $(INCLUDES) -I$(dir $<) $(CFLAGS) -c $< -o $@
-
 build/boot/boot.asm.o: $(BOOT_FILES)
 	@mkdir -p $(@D)
 	nasm -f elf -g -F dwarf -i $(dir $<) src/boot/boot.asm -o $@
-
-build/memory/%.asm.o: src/memory/%.asm
-	@mkdir -p $(@D)
-	nasm -f elf -g -F dwarf -i $(dir $<) $< -o $@
-
-build/io/%.asm.o: src/io/%.asm
-	@mkdir -p $(@D)
-	nasm -f elf -g -F dwarf -i $(dir $<) $< -o $@
-
-build/idt/%.asm.o: src/idt/%.asm
-	@mkdir -p $(@D)
-	nasm -f elf -g -F dwarf -i $(dir $<) $< -o $@
-
-build/kernel/%.asm.o: src/kernel/%.asm
-	@mkdir -p $(@D)
-	nasm -f elf -g -F dwarf -i $(dir $<) $< -o $@
 
 ##########################################
 ##########################################
