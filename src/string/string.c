@@ -69,8 +69,8 @@ size_t strlen(const char *const str)
 size_t strnlen(const char *const str, size_t max_len)
 {
     size_t len = 0;
-    while (len < max_len && str[len++] != '\0') {
-        ;
+    while (len < max_len && str[len] != '\0') {
+        ++len;
     }
     return len;
 }
@@ -90,15 +90,49 @@ int strcmp(const char *s1, const char *s2)
 int strncmp(const char *s1, const char *s2, size_t n)
 {
     size_t i = 0;
-    while (*s1 && *s2 && i < n) {
+    while (*s1 && *s2) {
         if (*s1 != *s2) {
             break;
         }
+
+        ++i;
+
+        if (i == n) {
+            break;
+        }
+
         ++s1;
         ++s2;
-        ++i;
     }
+
     return *s1 - *s2;
+}
+
+char *strcpy(char *dest, const char *src)
+{
+    char *ptr = dest;
+
+    while (*src) {
+        *ptr++ = *src++;
+    }
+
+    *ptr = '\0';
+    return dest;
+}
+
+char *strncpy(char *dest, const char *src, size_t n)
+{
+    size_t i;
+
+    for (i = 0; i < n && src[i]; ++i) {
+        dest[i] = src[i];
+    }
+
+    for (; i < n; ++i) {
+        dest[i] = '\0';
+    }
+
+    return dest;
 }
 
 bool is_digit(const char c)
@@ -157,4 +191,15 @@ void itoa(const int c, char *buf)
     if (is_negative) {
         *ptr = '-';
     }
+}
+
+char *strchr(const char *s, int c)
+{
+    while (*s) {
+        if (c == *s) {
+            return (char *)s;
+        }
+        ++s;
+    }
+    return NULL;
 }
