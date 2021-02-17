@@ -34,7 +34,7 @@ void terminal_print_char_x_y(const uint16_t character, const uint16_t x, const u
 void terminal_print_string_x_y(const char *str,  const enum VGA_COLOUR, const uint8_t x, const uint8_t y);
 void terminal_put_str(const char *str,  const enum VGA_COLOUR);
 void terminal_init();
-void print(const char *const str);
+void print(const char *str);
 void print_char(const char chr);
 
 #endif /* __TERMIO_H*/

@@ -60,7 +60,7 @@ void terminal_put_str(const char *str, const enum VGA_COLOUR colour)
     }
 }
 
-void print(const char *const str)
+void print(const char *str)
 {
     terminal_put_str(str, 15);
 }
