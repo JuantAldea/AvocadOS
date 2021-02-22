@@ -147,6 +147,7 @@ void heap_free(struct heap *heap, void *ptr)
     HEAP_TABLE_ENTRY *heap_entries = heap_table->entries;
 
     size_t block = heap_addr_to_block(heap, ptr);
+    memset(ptr, 0xFF, KERNEL_HEAP_BLOCK_SIZE); //NOLINT
 
     if (!BLOCK_TEST_FIRST(heap_entries[block])) {
         //int?
