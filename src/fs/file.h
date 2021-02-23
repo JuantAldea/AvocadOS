@@ -31,8 +31,8 @@ enum fopen_mode {
 
 typedef int (*FS_PROBE)(struct disk_t *disk);
 typedef void *(*FS_OPEN)(struct disk_t *disk, struct path_part *path, enum fopen_mode mode);
-typedef int (*FS_CLOSE)(struct file_descriptor_t file);
-typedef size_t (*FS_READ)(struct file_descriptor_t file);
+typedef int (*FS_CLOSE)(void *priv);
+typedef size_t (*FS_READ)(struct disk_t* disk, void* priv, uint32_t size, uint32_t nmemb, char* out);
 typedef size_t (*FS_WRITE)(struct file_descriptor_t file);
 typedef int (*FS_SEEK)(struct file_descriptor_t file, int32_t offset, enum seek_operation whence);
 typedef int (*FS_STAT)(int fd, void *buf);
@@ -50,5 +50,6 @@ struct filesystem_operations_t {
 };
 
 int fopen(const char *const filename, enum fopen_mode mode);
-
+int fclose(int fileno);
+int fread(void *ptr, uint32_t size, uint32_t nmemb, int fd);
 #endif

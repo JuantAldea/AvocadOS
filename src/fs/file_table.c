@@ -26,7 +26,7 @@ int file_table_find_free_slot()
     return -EMFILE;
 }
 
-int file_table_open_file(struct file_descriptor_t **descriptor)
+int file_table_open_file(struct file_descriptor_t *descriptor)
 {
     int index = file_table_find_free_slot();
 
@@ -34,9 +34,8 @@ int file_table_open_file(struct file_descriptor_t **descriptor)
         return index;
     }
 
-    *descriptor = kzalloc(sizeof(struct file_descriptor_t));
-    (*descriptor)->fileno = index;
-    file_table.table[index] = *descriptor;
+    descriptor->fileno = index;
+    file_table.table[index] = descriptor;
 
     return 0;
 }
