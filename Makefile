@@ -35,9 +35,26 @@ $(TARGET): bin/boot.bin bin/kernel.bin
 	# padding and safe space all that
 	dd if=/dev/zero bs=1048576 count=16 >> $@
 	mkdir -p mnt
-	fusefat -o rw+ $@ mnt/
-	echo "Would you fancy some avocados?" > mnt/dummy.txt
-	fusermount -u -q -z mnt/ || /bin/true
+	#fusefat -o rw+ $@ mnt/
+	sudo mount -t vfat bin/image.bin mnt/
+	echo "Would you fancy some avocados?" > motd.txt
+	sudo cp motd.txt mnt/
+	#sudo cp frag.txt mnt/
+	#sudo cp inferno.txt mnt/
+	#sudo mkdir mnt/folder1
+	#sudo cp inferno.txt mnt/folder1
+	#sudo touch mnt/folder1/asd1
+	#sudo touch mnt/folder1/asd2
+	#sudo touch mnt/folder1/asd3
+	#sudo touch mnt/folder1/asd4
+
+	#sudo cp dummy.txt mnt/dummy2.txt
+	#sudo cp dummy.txt mnt/dummy3.txt
+	#sudo mkdir mnt/01234567
+	#sudo mkdir mnt/012345678
+	#sudo mkdir mnt/0123456789
+	#fusermount -u -q -z mnt/ || /bin/true
+	sudo umount mnt
 
 define BUILD_RULE
 $(1): $(2) $(3)

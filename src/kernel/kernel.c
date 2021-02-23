@@ -46,38 +46,58 @@ void kernel_main(void)
 
     kheap_init();
 
-    print("Init kheap\n");
+    //print("Init kheap\n");
 
     idt_init();
-    print("Setup interrupts\n");
+    //print("Setup interrupts\n");
 
     kernel_chunk = page_directory_init_4gb(PAGING_WRITABLE_PAGE | PAGING_PRESENT | PAGING_ACCESS_FROM_ALL);
     paging_switch_directory(kernel_chunk);
     enable_paging();
 
-    print("Enabled paging\n");
+    //print("Enabled paging\n");
 
-    print("Init volume: ");
+    //print("Init volume: ");
 
     file_table_init();
     fs_init();
     disk_init();
 
     enable_interrupts();
-    print("Enabled interrupts\n");
+    //print("Enabled interrupts\n");
+    print("\n\nContents of ");
+    char path[] = "0:/MOTD.TXT";
+    print(path);
+    print(":");
+    int des = fopen(path, OPEN_MODE_READ);
+    if (des < 0) {
+        print("Error opening file\n");
+        goto trap;
+    }
+    char buffer[65536] = { 0 };
+    int read = fread(buffer, 1, sizeof(buffer), des);
+    if (read < 0) {
+        print("Error reading file\n");
+        goto trap;
+    }
+    int ret = fclose(des);
+    if (ret) {
+        print("Error closing file\n");
+        goto trap;
+    }
 
-    char path[] = "0:/Compilers/Principles/Techniques/and/Tools";
-    fopen(path, OPEN_MODE_READ);
-    size_t in_use = kheap_count_used_blocks();
-    char buffer[10];
+    print_char('\n');
+    print(buffer);
+    //size_t in_use = kheap_count_used_blocks();
+    //char buffer[10];
 
     // 1 handler + 1 Table Directory + 1024 Page Tables = 1026
-    itoa(in_use - 1026, buffer);
-    print("\nBlocks in use at exit: ");
-    print(buffer);
-    print_char('\n');
+    //itoa(in_use - 1026, buffer);
+    //print("\nBlocks in use at exit: ");
+    //print(buffer);
+    //print_char('\n');
 
-    print("\n\nDone, for now\n");
+    //print("\n\nDone, for now\n");
 trap:
     goto trap;
 }
