@@ -68,3 +68,8 @@ void __memcheck_kfree(void *ptr)
     memcheck_free(ptr);
     __kfree(ptr);
 }
+
+void *malloc(size_t size)
+{
+    return kmalloc(size);
+}
