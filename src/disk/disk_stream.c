@@ -11,9 +11,10 @@ int diskstream_seek(struct disk_stream *stream, size_t ppos)
 
 struct disk_stream *diskstream_new(int disk_id)
 {
-    struct disk_t *disk = disk_get(disk_id);
+    struct disk_t *disk;
+    int res = disk_get(disk_id, &disk);
 
-    if (!disk) {
+    if (res) {
         return NULL;
     }
 
@@ -22,21 +23,22 @@ struct disk_stream *diskstream_new(int disk_id)
     return stream;
 }
 
-int diskstream_read(struct disk_stream *stream, void *buffer, int count)
+int diskstream_read(struct disk_stream *stream, void *buffer, int len)
 {
     int offset = stream->ppos % DISK_SECTOR_SIZE;
     int sector = stream->ppos / DISK_SECTOR_SIZE;
     char sector_buffer[DISK_SECTOR_SIZE];
     int read_so_far = 0;
 
-    while (read_so_far < count) {
+    while (read_so_far < len) {
         const int ret = disk_read_block(stream->disk, sector, 1, sector_buffer);
 
         if (ret) {
             return ret;
         }
 
-        size_t to_copy = count < (DISK_SECTOR_SIZE - offset) ? count : (DISK_SECTOR_SIZE - offset);
+        const int remaining = len - read_so_far;
+        const size_t to_copy = remaining < (DISK_SECTOR_SIZE - offset) ? remaining : (DISK_SECTOR_SIZE - offset);
         memcpy(buffer + read_so_far, sector_buffer + offset, to_copy); // NOLINT
         read_so_far += to_copy;
         // there could be offset only for the first chunk read
