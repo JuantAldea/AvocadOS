@@ -44,15 +44,20 @@ void disk_init()
     disks[0].fs_operations = fs_probe_fs(&disks[0]);
 }
 
-struct disk_t *disk_get(int disk_index)
+int disk_get(int disk_index, struct disk_t **disk)
 {
-    return !disk_index ? disks : NULL;
+    if (disk_index != 0) {
+        *disk = NULL;
+        return -ENOMEDIUM;
+    }
+    *disk = &disks[disk_index];
+    return 0;
 }
 
 int disk_read_block(const struct disk_t *const disk, const unsigned int lba, const int n, void *const buffer)
 {
     if (disk != &disks[0]) {
-        return -EIO;
+        return -ENOMEDIUM;
     }
 
     return disk_read_sector(disk, lba, n, buffer);

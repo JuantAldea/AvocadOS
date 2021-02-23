@@ -19,12 +19,13 @@ struct disk_t {
     uint8_t type;
     int sector_size;
     uint8_t port;
-    struct filesystem_operations_t *fs_operations;
     int id;
+    struct filesystem_operations_t *fs_operations;
+    void* fs_private;
 };
 
 int disk_read_block(const struct disk_t *const disk, const unsigned int lba, const int n, void *const buffer);
 void disk_init();
-struct disk_t *disk_get(int disk_index);
+int disk_get(int disk_index, struct disk_t **disk);
 
 #endif
