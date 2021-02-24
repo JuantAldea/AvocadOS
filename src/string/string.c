@@ -108,6 +108,51 @@ int strncmp(const char *s1, const char *s2, size_t n)
     return *s1 - *s2;
 }
 
+int strcasecmp(const char *s1, const char *s2)
+{
+    char char_s1 = 0;
+    char char_s2 = 0;
+
+    while (*s1 && *s2) {
+        char_s1 = to_upper(*s1);
+        char_s2 = to_upper(*s2);
+
+        if (char_s1 != char_s2) {
+            break;
+        }
+
+        ++s1;
+        ++s2;
+    }
+    return char_s1 - char_s2;
+}
+
+int strncasecmp(const char *s1, const char *s2, size_t n)
+{
+    char char_s1 = 0;
+    char char_s2 = 0;
+    size_t i = 0;
+    while (*s1 && *s2) {
+        char_s1 = to_upper(*s1);
+        char_s2 = to_upper(*s2);
+
+        if (char_s1 != char_s2) {
+            break;
+        }
+
+        ++i;
+
+        if (i == n) {
+            break;
+        }
+
+        ++s1;
+        ++s2;
+    }
+
+    return *s1 - *s2;
+}
+
 char *strcpy(char *dest, const char *src)
 {
     char *ptr = dest;
@@ -202,4 +247,14 @@ char *strchr(const char *s, int c)
         ++s;
     }
     return NULL;
+}
+
+int to_upper(const char c)
+{
+    return (c >= 'a' && c <= 'z') ? c - ('a' - 'A') : c;
+}
+
+int to_lower(const char c)
+{
+    return (c >= 'A' && c <= 'Z') ? c + ('a' - 'A') : c;
 }
