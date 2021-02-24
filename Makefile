@@ -47,12 +47,6 @@ $(TARGET): bin/boot.bin bin/kernel.bin
 	#sudo touch mnt/folder1/asd2
 	#sudo touch mnt/folder1/asd3
 	#sudo touch mnt/folder1/asd4
-
-	#sudo cp dummy.txt mnt/dummy2.txt
-	#sudo cp dummy.txt mnt/dummy3.txt
-	#sudo mkdir mnt/01234567
-	#sudo mkdir mnt/012345678
-	#sudo mkdir mnt/0123456789
 	#fusermount -u -q -z mnt/ || /bin/true
 	sudo umount mnt
 

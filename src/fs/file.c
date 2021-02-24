@@ -39,13 +39,35 @@ struct filesystem_operations_t *fs_probe_fs(struct disk_t *disk)
     return NULL;
 }
 
-int fopen(const char *const filename, enum fopen_mode mode)
+enum fopen_mode file_mode_from_string(const char *str)
 {
+    if (!strncmp(str, "w", 1)) {
+        return OPEN_MODE_WRITE;
+    } else if (!strncmp(str, "r", 1)) {
+        return OPEN_MODE_READ;
+    } else if (!strncmp(str, "a", 1)) {
+        return OPEN_MODE_APPEND;
+    }
+    return OPEN_MODE_INVALID;
+}
+
+int fopen(const char *const filename, const char *str_mode)
+{
+    enum fopen_mode mode = file_mode_from_string(str_mode);
+
+    if (mode == OPEN_MODE_INVALID) {
+        return -EINVAL;
+    }
+
     int res = 0;
     struct path_root *path = pathparser_path_parse(filename);
 
     if (!path) {
         return -ENOMEM;
+    }
+
+    if (!path->first) {
+        return -EINVAL;
     }
 
     struct file_descriptor_t *descriptor = kzalloc(sizeof(struct file_descriptor_t));
@@ -61,8 +83,19 @@ int fopen(const char *const filename, enum fopen_mode mode)
         goto out;
     }
 
+    if (!descriptor->disk->fs_operations) {
+        res = -EIO;
+        goto out;
+    }
+
     descriptor->path = path;
+
     descriptor->private_data = descriptor->disk->fs_operations->open(descriptor->disk, path->first, mode);
+
+    if (!descriptor->private_data) {
+        res = -EIO;
+        goto out;
+    }
 
     res = file_table_open_file(descriptor);
 
@@ -72,7 +105,7 @@ out:
             pathparse_path_free(path);
         }
 
-        if (descriptor && descriptor->private_data) {
+        if (descriptor && descriptor->disk->fs_operations && descriptor->private_data) {
             descriptor->disk->fs_operations->close(descriptor->private_data);
         }
 
@@ -111,7 +144,7 @@ out:
     return res;
 }
 
-int fread(void *ptr, uint32_t size, uint32_t nmemb, int fd)
+int fread(int fd, void *ptr, uint32_t size, uint32_t nmemb)
 {
     struct file_descriptor_t *descriptor = file_table.table[fd];
 
@@ -119,5 +152,16 @@ int fread(void *ptr, uint32_t size, uint32_t nmemb, int fd)
         return -EINVAL;
     }
 
-    return descriptor->disk->fs_operations->read(descriptor->disk, descriptor->private_data, size, nmemb, ptr);
+    return descriptor->disk->fs_operations->read(descriptor->private_data, size, nmemb, ptr);
+}
+
+int fseek(int fd, int32_t offset, enum seek_operation whence)
+{
+    struct file_descriptor_t *descriptor = file_table.table[fd];
+
+    if (!descriptor) {
+        return -EINVAL;
+    }
+
+    return descriptor->disk->fs_operations->seek(descriptor->private_data, offset, whence);
 }

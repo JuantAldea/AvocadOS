@@ -69,17 +69,22 @@ void kernel_main(void)
     char path[] = "0:/MOTD.TXT";
     print(path);
     print(":");
-    int des = fopen(path, OPEN_MODE_READ);
+
+    int des = fopen(path, "r");
     if (des < 0) {
         print("Error opening file\n");
         goto trap;
     }
+
     char buffer[65536] = { 0 };
-    int read = fread(buffer, 1, sizeof(buffer), des);
+
+    int read = fread(des, buffer, 1, sizeof(buffer));
+
     if (read < 0) {
         print("Error reading file\n");
         goto trap;
     }
+
     int ret = fclose(des);
     if (ret) {
         print("Error closing file\n");

@@ -23,7 +23,13 @@ typedef uint8_t FAT_ENTRY_TYPE;
 #define FAT16_FILE_DEVICE 0x40
 #define FAT16_FILE_RESERVED 0x80
 #define FAT16_FILE_LFN 0x0F
-#define FAT16_CLUSTER_CHAIN_END 0xFFF8
+
+#define FAT16_CLUSTER_RESERVED 0xFFF6
+#define FAT16_CLUSTER_BAD_OR_RESERVED 0xFFF7
+#define FAT16_CLUSTER_CHAIN_END_BEGIN 0xFFF8
+#define FAT16_CLUSTER_CHAIN_END_END 0xFFFF
+
+extern struct filesystem_operations_t fat16_operations;
 
 enum fopen_mode;
 struct file_descriptor_t;
@@ -81,12 +87,10 @@ struct fat_item_t {
 
 struct fat_descriptor_t {
     struct fat_item_t item;
-    uint16_t first_cluster;
     int eof;
     uint32_t pos;
     uint32_t offset_in_cluster;
     uint32_t current_cluster_first_sector;
-    uint32_t address;
     struct disk_t *disk;
 };
 
@@ -98,40 +102,19 @@ struct fat_private_data_t {
     struct disk_stream *dev;
 };
 
+
+
 int fat16_probe(struct disk_t *disk);
 void *fat16_open(struct disk_t *disk, struct path_part *path, enum fopen_mode mode);
 int fat16_close(void *priv);
-size_t fat16_read(struct disk_t *disk, void *priv, uint32_t size, uint32_t nmemb, char *out);
+size_t fat16_read(void *priv, uint32_t size, uint32_t nmemb, char *out);
+int fat16_seek(void *priv, int32_t offset, int whence);
+
 int fat16_write(struct disk_t *disk);
-int fat16_seek(struct disk_t *disk);
 int fat16_stat(struct disk_t *disk);
-int fat16_link(struct disk_t *disk);
 int fat16_unlink(struct disk_t *disk);
 
 struct fat_item_t *fat16_find_entry_in_dir(struct fat_descriptor_t *descriptor, const char *filename, const char *extension);
-extern struct filesystem_operations_t fat16_operations;
-
-uint16_t fat16_fat_next_cluster_number(const struct fat_private_data_t *private, uint16_t cluster);
-
-uint16_t fat16_cluster_chain_nth(const struct fat_private_data_t *private, uint16_t cluster, size_t nth);
-size_t __fat16_read(struct fat_descriptor_t *descriptor, void *ptr, size_t len);
-struct fat_descriptor_t *fat16_open2(struct disk_t *disk, struct fat_entry_t *entry);
-
-//struct fat_descriptor_t *create_root_dir_descriptor(struct disk_t *disk);
-int fat16_read_dir(struct fat_descriptor_t *dir, struct fat_entry_t *entry);
-struct fat_descriptor_t *__fat16_opendir(struct disk_t *disk, uint32_t sector);
-struct fat_descriptor_t *fat16_opendir(struct disk_t *disk, struct fat_item_t *item);
-
 struct fat_item_t *traverse_path(struct disk_t *disk, struct path_part *path);
-void fat16_fat_private_free(struct fat_private_data_t **ptr);
-
-int fat16_testing(struct disk_t *disk);
-
-uint16_t fat16_sector_to_cluster_number(const struct fat_private_data_t *private, uint32_t sector);
-uint32_t fat16_cluster_number_to_data_sector(const struct fat_private_data_t *private, uint16_t cluster);
-uint32_t fat16_cluster_number_to_data_address(const struct fat_private_data_t *private, uint16_t cluster);
-size_t fat16_read_file(struct fat_descriptor_t *descriptor, void *ptr, size_t len);
-
-int fat16_item_is_root_dir(const struct fat_private_data_t *const private, const struct fat_item_t *const dir);
 
 #endif
