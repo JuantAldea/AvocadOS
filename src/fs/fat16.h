@@ -35,6 +35,7 @@ enum fopen_mode;
 struct file_descriptor_t;
 struct path_part;
 struct disk_t;
+struct stat;
 
 struct fat_header_t {
     uint8_t jump_nop[3];
@@ -103,16 +104,14 @@ struct fat_private_data_t {
     struct disk_stream *dev;
 };
 
-
-
 int fat16_probe(struct disk_t *disk);
 void *fat16_open(struct disk_t *disk, struct path_part *path, enum fopen_mode mode);
 int fat16_close(void *priv);
 size_t fat16_read(void *priv, uint32_t size, uint32_t nmemb, char *out);
 int fat16_seek(void *priv, int32_t offset, int whence);
+int fat16_stat(void *priv, struct stat *buf);
 
 int fat16_write(struct disk_t *disk);
-int fat16_stat(struct disk_t *disk);
 int fat16_unlink(struct disk_t *disk);
 
 struct fat_item_t *fat16_find_entry_in_dir(struct fat_descriptor_t *descriptor, const char *filename, const char *extension);

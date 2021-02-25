@@ -122,7 +122,7 @@ int fclose(int fd)
     struct file_descriptor_t *descriptor = file_table.table[fd];
 
     if (!descriptor) {
-        return -EINVAL;
+        return -EBADF;
     }
 
     int res = file_table_close_file(descriptor);
@@ -149,7 +149,7 @@ int fread(int fd, void *ptr, uint32_t size, uint32_t nmemb)
     struct file_descriptor_t *descriptor = file_table.table[fd];
 
     if (!descriptor) {
-        return -EINVAL;
+        return -EBADF;
     }
 
     return descriptor->disk->fs_operations->read(descriptor->private_data, size, nmemb, ptr);
@@ -160,8 +160,19 @@ int fseek(int fd, int32_t offset, enum seek_operation whence)
     struct file_descriptor_t *descriptor = file_table.table[fd];
 
     if (!descriptor) {
-        return -EINVAL;
+        return -EBADF;
     }
 
     return descriptor->disk->fs_operations->seek(descriptor->private_data, offset, whence);
+}
+
+int fstat(int fd, struct stat *buf)
+{
+    struct file_descriptor_t *descriptor = file_table.table[fd];
+
+    if (!descriptor) {
+        return -EBADF;
+    }
+
+    return descriptor->disk->fs_operations->stat(descriptor->private_data, buf);
 }

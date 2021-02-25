@@ -79,7 +79,8 @@ void kernel_main(void)
     char buffer[65536] = { 0 };
 
     int read = fread(des, buffer, 1, sizeof(buffer));
-
+    struct stat file_info;
+    fstat(des, &file_info);
     if (read < 0) {
         print("Error reading file\n");
         goto trap;

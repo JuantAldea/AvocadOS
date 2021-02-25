@@ -15,10 +15,11 @@ struct filesystem_operations_t fat16_operations = {
     .open = fat16_open,
     .close = fat16_close,
     .read = fat16_read,
+    .stat = fat16_stat,
+
     /*
     .write = fat16_write,
     .seek = fat16_seek,
-    .stat = fat16_stat,
     .unlink = fat16_unlink,
     */
 };
@@ -549,9 +550,11 @@ int fat16_seek(void *priv, int32_t offset, int whence)
     return 1;
 }
 
-int fat16_stat(struct disk_t *disk)
+int fat16_stat(void *priv, struct stat *buf)
 {
-    (void)disk;
+    struct fat_descriptor_t *descriptor = priv;
+    buf->st_dev = descriptor->disk->id;
+    buf->st_size = descriptor->item.entry.size_bytes;
     return 0;
 }
 
