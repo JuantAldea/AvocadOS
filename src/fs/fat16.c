@@ -106,10 +106,14 @@ int __fat16_adjust_cursors_root_dir(struct fat_descriptor_t *descriptor)
 {
     const struct fat_private_data_t *private = descriptor->disk->fs_private;
 
-    descriptor->offset_in_cluster = descriptor->pos;
+    descriptor->relative_pos = descriptor->pos;
 
-    if (descriptor->pos == private->data_sector) {
+    if (descriptor->pos >= private->data_sector) {
         descriptor->eof = 1;
+        if (descriptor->pos > private->data_sector) {
+            descriptor->error = -EIO;
+            return -EIO;
+        }
     }
 
     return 0;
@@ -122,9 +126,10 @@ int __fat16_adjust_cursors_non_root(struct fat_descriptor_t *descriptor)
     uint32_t cluster_count = descriptor->pos / private->bytes_per_cluster;
     uint16_t first_cluster = fat16_sector_to_cluster_number(private, descriptor->item.first_sector);
     uint16_t current_cluster = fat16_follow_cluster_chain(private, first_cluster, cluster_count);
-    descriptor->offset_in_cluster = descriptor->pos % private->bytes_per_cluster;
+    descriptor->relative_pos = descriptor->pos % private->bytes_per_cluster;
 
     if (current_cluster == FAT16_CLUSTER_RESERVED || current_cluster == FAT16_CLUSTER_BAD_OR_RESERVED) {
+        descriptor->error = -EIO;
         return -EIO;
     }
 
@@ -157,7 +162,7 @@ uint32_t __fat16_descriptor_to_absolute_address(struct fat_descriptor_t *descrip
 
     const uint32_t data_region_addr = descriptor->current_cluster_first_sector * header->bytes_per_sector;
 
-    return data_region_addr + descriptor->offset_in_cluster;
+    return data_region_addr + descriptor->relative_pos;
 }
 
 struct fat_item_t *traverse_path(struct disk_t *disk, struct path_part *path)
@@ -194,7 +199,7 @@ struct fat_item_t *traverse_path(struct disk_t *disk, struct path_part *path)
 void __fat16_reset_cursors(struct fat_descriptor_t *descriptor)
 {
     descriptor->pos = 0;
-    descriptor->offset_in_cluster = 0;
+    descriptor->relative_pos = 0;
     descriptor->current_cluster_first_sector = descriptor->item.first_sector;
     descriptor->eof = 0;
 }
@@ -264,12 +269,11 @@ struct fat_item_t *fat16_find_entry_in_dir(struct fat_descriptor_t *descriptor, 
 
     while (!descriptor->eof) {
         int res = __fat16_read(descriptor, &entry, sizeof(struct fat_entry_t));
-
-        ++dir_pos;
-
         if (res < 0) {
             goto out;
         }
+
+        ++dir_pos;
 
         if (entry.attributes == FAT16_FILE_LFN || entry.attributes & FAT16_FILE_VOLUME_LABEL) {
             continue;
@@ -307,7 +311,11 @@ out:
 
 size_t fat16_read_file(struct fat_descriptor_t *descriptor, void *ptr, size_t len)
 {
-    __fat16_adjust_cursors(descriptor, 0);
+    int res = __fat16_adjust_cursors(descriptor, 0);
+    if (res) {
+        return res;
+    }
+
     if (descriptor->eof) {
         return 0;
     }
@@ -318,7 +326,11 @@ size_t fat16_read_file(struct fat_descriptor_t *descriptor, void *ptr, size_t le
     }
 
     len = MIN(len, descriptor->item.entry.size_bytes - descriptor->pos);
-    int res = __fat16_read(descriptor, ptr, len);
+
+    res = __fat16_read(descriptor, ptr, len);
+    if (res) {
+        return res;
+    }
 
     if (descriptor->pos >= descriptor->item.entry.size_bytes) {
         descriptor->eof = 1;
@@ -334,14 +346,18 @@ size_t __fat16_read(struct fat_descriptor_t *descriptor, void *ptr, size_t len)
     size_t read = 0;
     while (read < len && !descriptor->eof) {
         diskstream_seek(private->dev, __fat16_descriptor_to_absolute_address(descriptor));
-        const size_t to_read_sequentially = MIN(len - read, private->bytes_per_cluster - descriptor->offset_in_cluster);
+        const size_t to_read_sequentially = MIN(len - read, private->bytes_per_cluster - descriptor->relative_pos);
         const int chunk_read = diskstream_read(private->dev, ptr, to_read_sequentially);
 
         if (chunk_read <= 0) {
+            descriptor->error = chunk_read;
             return chunk_read;
         }
 
-        __fat16_adjust_cursors(descriptor, chunk_read);
+        int res = __fat16_adjust_cursors(descriptor, chunk_read);
+        if (res) {
+            return res;
+        }
 
         read += chunk_read;
         ptr += chunk_read;
@@ -479,8 +495,11 @@ int fat16_close(void *priv)
 size_t fat16_read(void *priv, uint32_t size, uint32_t nmemb, char *out)
 {
     struct fat_descriptor_t *descriptor = priv;
+    int res = 0;
 
-    __fat16_adjust_cursors(descriptor, 0);
+    if ((res = __fat16_adjust_cursors(descriptor, 0))) {
+        return res;
+    }
 
     if (descriptor->eof) {
         return 0;
@@ -492,7 +511,7 @@ size_t fat16_read(void *priv, uint32_t size, uint32_t nmemb, char *out)
     }
 
     size_t len = MIN(size * nmemb, descriptor->item.entry.size_bytes - descriptor->pos);
-    int res = __fat16_read(descriptor, out, len);
+    res = __fat16_read(descriptor, out, len);
 
     if (descriptor->pos >= descriptor->item.entry.size_bytes) {
         descriptor->eof = 1;

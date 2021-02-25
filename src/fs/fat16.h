@@ -89,9 +89,10 @@ struct fat_descriptor_t {
     struct fat_item_t item;
     int eof;
     uint32_t pos;
-    uint32_t offset_in_cluster;
+    uint32_t relative_pos;
     uint32_t current_cluster_first_sector;
     struct disk_t *disk;
+    int error;
 };
 
 struct fat_private_data_t {
