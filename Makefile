@@ -41,9 +41,9 @@ $(TARGET): bin/boot.bin bin/kernel.bin
 	sudo cp motd.txt mnt/
 	#sudo cp frag.txt mnt/
 	#sudo cp inferno.txt mnt/
-	#sudo mkdir mnt/folder1
+	sudo mkdir mnt/folder1
 	#sudo cp inferno.txt mnt/folder1
-	#sudo touch mnt/folder1/asd1
+	sudo touch mnt/folder1/asd1
 	#sudo touch mnt/folder1/asd2
 	#sudo touch mnt/folder1/asd3
 	#sudo touch mnt/folder1/asd4

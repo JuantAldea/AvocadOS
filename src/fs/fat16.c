@@ -74,7 +74,7 @@ uint16_t fat16_sector_to_cluster_number(const struct fat_private_data_t *private
     return 2 + (sector - private->data_sector) / private->header.sectors_per_cluster;
 }
 
-uint16_t fat16_fat_read_fat_entry(const struct fat_private_data_t *private, uint16_t cluster)
+uint16_t fat16_read_fat(const struct fat_private_data_t *private, uint16_t cluster)
 {
     if (cluster >= FAT16_CLUSTER_CHAIN_END_BEGIN) {
         return FAT16_CLUSTER_CHAIN_END_BEGIN;
@@ -89,12 +89,26 @@ uint16_t fat16_fat_read_fat_entry(const struct fat_private_data_t *private, uint
     return next_cluster;
 }
 
+int fat16_write_fat(const struct fat_private_data_t *private, uint16_t cluster, uint16_t value)
+{
+    (void)private;
+    (void)cluster;
+    (void)value;
+    return 0;
+}
+
+uint16_t fat16_get_free_cluster(const struct fat_private_data_t *private)
+{
+    (void)private;
+    return FAT16_CLUSTER_CHAIN_END_BEGIN;
+}
+
 uint16_t fat16_follow_cluster_chain(const struct fat_private_data_t *private, uint16_t cluster, size_t steps)
 {
     uint16_t next_cluster = cluster;
 
     for (size_t i = 0; i < steps && next_cluster < FAT16_CLUSTER_CHAIN_END_BEGIN; ++i) {
-        next_cluster = fat16_fat_read_fat_entry(private, next_cluster);
+        next_cluster = fat16_read_fat(private, next_cluster);
         if (!next_cluster || next_cluster == FAT16_CLUSTER_RESERVED || next_cluster == FAT16_CLUSTER_BAD_OR_RESERVED) {
             break;
         }
@@ -120,9 +134,75 @@ int __fat16_adjust_cursors_root_dir(struct fat_descriptor_t *descriptor)
     return 0;
 }
 
+struct fat_cluster_chain {
+    uint16_t first;
+    uint16_t previous;
+    uint16_t current;
+    struct fat_private_data_t *private;
+};
+
+void fat16_cluster_chain_init(uint16_t begin, struct fat_private_data_t *private, struct fat_cluster_chain *chain)
+{
+    chain->first = begin;
+    chain->previous = begin;
+    chain->current = begin;
+    chain->private = private;
+}
+
+void fat16_cluster_chain_next(struct fat_cluster_chain *chain)
+{
+    if (chain->current == FAT16_CLUSTER_BAD_OR_RESERVED || chain->current == FAT16_CLUSTER_RESERVED ||
+        chain->current >= FAT16_CLUSTER_CHAIN_END_BEGIN) {
+        return;
+    }
+
+    chain->previous = chain->current;
+    chain->current = fat16_read_fat(chain->private, chain->current);
+}
+
+int fat16_cluster_chain_is_over(const struct fat_cluster_chain *const chain)
+{
+    return chain->current == FAT16_CLUSTER_CHAIN_END_BEGIN;
+}
+
+int fat16_cluster_chain_ok(const struct fat_cluster_chain *const chain)
+{
+    return chain->current != FAT16_CLUSTER_BAD_OR_RESERVED && chain->current != FAT16_CLUSTER_RESERVED;
+}
+
+int fat16_cluster_allocate_next(struct fat_cluster_chain *const chain)
+{
+    if (!fat16_cluster_chain_is_over(chain)) {
+        return -EINVAL;
+    }
+
+    uint16_t free_cluster = fat16_get_free_cluster(chain->private);
+
+    if (free_cluster >= FAT16_CLUSTER_CHAIN_END_BEGIN) {
+        return -ENOSPC;
+    }
+
+    if (fat16_write_fat(chain->private, free_cluster, FAT16_CLUSTER_CHAIN_END_BEGIN)) {
+        return -EIO;
+    }
+
+    if (fat16_write_fat(chain->private, chain->previous, free_cluster)) {
+        return -EIO;
+    }
+
+    chain->current = free_cluster;
+
+    return 0;
+}
+
 int __fat16_adjust_cursors_non_root(struct fat_descriptor_t *descriptor)
 {
     const struct fat_private_data_t *private = descriptor->disk->fs_private;
+
+    if (!descriptor->item.entry.low16_bits_first_cluster) {
+        descriptor->eof = 1;
+        return 0;
+    }
 
     uint32_t cluster_count = descriptor->pos / private->bytes_per_cluster;
     uint16_t first_cluster = fat16_sector_to_cluster_number(private, descriptor->item.first_sector);

@@ -10,6 +10,8 @@
 #define ENFILE          23      /* File table overflow */
 #define EMFILE          24      /* Too many open files */
 
+#define ENOSPC          28		/* No space left on device */
+
 #define ENOMEDIUM       123     /* No medium found */
 #define EMEDIUMTYPE     124     /* Wrong medium type */
 #endif
