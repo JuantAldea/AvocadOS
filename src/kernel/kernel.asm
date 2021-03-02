@@ -27,6 +27,7 @@ _start_kernel:
 remap_master_pic:
     push ebp
     mov ebp, esp
+
     mov al, 00010001b
     out 0x20, al
 
@@ -35,6 +36,8 @@ remap_master_pic:
 
     mov al, 00000001b
     out 0x21, al
+
+    mov esp, ebp
     pop ebp
     ret
 

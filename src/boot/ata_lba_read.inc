@@ -80,5 +80,7 @@ ata_lba_read:
     pop ebx
     pop eax
     popfd
+
+    mov esp, ebp
     pop ebp
     ret
