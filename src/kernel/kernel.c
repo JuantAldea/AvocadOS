@@ -11,6 +11,9 @@
 #include "../string/string.h"
 #include "../config.h"
 #include "../fs/file.h"
+#include "gdt.h"
+#include "task/tss.h"
+#include "task/task.h"
 
 void kernel_splash()
 {
@@ -22,7 +25,7 @@ void kernel_splash()
     terminal_put_str("               \\_/ \\_/ \\_/  \\___/  \\___|\\__,_| \\__,_|\\___/  \\__/\n", 2);
 }
 
-static struct page_directory_handle *kernel_chunk = NULL;
+static struct page_directory_handle *kernel_page_directory = NULL;
 
 void print_path(struct path_root *path)
 {
@@ -32,6 +35,7 @@ void print_path(struct path_root *path)
     itoa(path->drive_number, buffer);
     print(buffer);
     print_char('\n');
+
     while (part) {
         print(part->part);
         print("\n");
@@ -43,6 +47,7 @@ void kernel_main(void)
 {
     terminal_init();
     kernel_splash();
+    gdt_segments_init_and_load();
 
     kheap_init();
 
@@ -51,9 +56,21 @@ void kernel_main(void)
     idt_init();
     //print("Setup interrupts\n");
 
-    kernel_chunk = page_directory_init_4gb(PAGING_WRITABLE_PAGE | PAGING_PRESENT | PAGING_ACCESS_FROM_ALL);
-    paging_switch_directory(kernel_chunk);
+    tss.esp = 0x600000;
+    tss.ss0 = KERNEL_DATA_SELECTOR;
+    tss_load(sizeof(struct gdt) * 5);
+
+    kernel_page_directory = paging_init_4gb_directory(PAGING_WRITABLE_PAGE | PAGING_PRESENT | PAGING_ACCESS_FROM_ALL);
+    paging_switch_directory(kernel_page_directory);
+
     enable_paging();
+    task_init();
+    task_new();
+    task_new();
+    task_new();
+    task_new();
+    task_new();
+    print_tasks();
 
     //print("Enabled paging\n");
 

@@ -3,6 +3,7 @@
 
 #define KERNEL_OK 0
 #define EIO              5      /* I/O error */
+#define ENOEXEC          8      /* Exec format error */
 #define EBADF            9      /* Bad file number */
 #define ENOMEM          12      /* Out of memory */
 #define EINVAL          22      /* Invalid argument */
