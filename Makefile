@@ -28,6 +28,8 @@ QEMU_RUN_COMMAND = qemu-system-i386 -hda $(TARGET)
 .phony: all folder run gdb clean
 
 all: $(TARGET)
+scan-build:
+	scan-build --use-cc=$(CC) --analyzer-target=i386 make
 
 $(TARGET): bin/boot.bin bin/kernel.bin
 	dd if=bin/boot.bin > $@
