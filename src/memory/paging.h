@@ -22,11 +22,17 @@ struct page_directory_handle {
     uintptr_t *directory;
 };
 
-struct page_directory_handle *page_directory_init_4gb(const uint8_t flags);
+struct page_directory_handle *paging_init_4gb_directory(const uint8_t flags);
+void paging_free_4gb_directory(struct page_directory_handle *handle);
 void paging_switch_directory(const struct page_directory_handle *const chunk);
 extern void enable_paging();
 
 bool paging_addr_is_page_aligned(const void *const addr);
-int paging_map_v_addr(struct page_directory_handle *chunk, const void *const virtual_addr, const void *const page_ptr, const uint8_t flags);
+void *paging_align_address(const void *const addr);
+
+int paging_map_page(struct page_directory_handle *chunk, const void *const virt, const void *const phys, const uint8_t flags);
+int paging_map_from_to(struct page_directory_handle *const directory, void *virt, void *phys_begin, void *phys_end, int flags);
+int paging_map_range(struct page_directory_handle *const directory, void *virt, void *phys, int count, int flags);
+//int paging_map(struct page_directory_handle *const directory, void *virt, void *phys, int flags);
 
 #endif
