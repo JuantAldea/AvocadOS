@@ -1,16 +1,27 @@
 #include "string.h"
 #include "../memory/kheap.h"
+#include <stdint.h>
 
 // despite of memset taking an int c, it casts it down to bytes
 void *memset(void *s, int c, size_t n)
 {
-    char *ptr = (char *)s;
+    // Align? Nah
+    uint32_t *qword_ptr = (uint32_t *)s;
+    size_t dwords = n / sizeof(*qword_ptr);
+    size_t remining_bytes = n % sizeof(*qword_ptr);
+    char byte = (char)c;
+    uint32_t dword_value = byte << 24 | byte << 16 | byte << 8 | byte;
 
-    for (size_t i = 0; i < n; ++i) {
-        ptr[i] = (char)c;
+    for (size_t dword = 0; dword < dwords; ++dword) {
+        qword_ptr[dword] = dword_value;
     }
 
-    return ptr;
+    char *byte_ptr = (char *)(s + dwords * 4);
+    for (size_t i = 0; i < remining_bytes; ++i) {
+        byte_ptr[i] = byte;
+    }
+
+    return s;
 }
 
 int memcmp(const void *s1, const void *s2, size_t n)
@@ -20,6 +31,7 @@ int memcmp(const void *s1, const void *s2, size_t n)
             return ((char *)s1)[i] != ((char *)s2)[i];
         }
     }
+
     return 0;
 }
 
@@ -30,13 +42,27 @@ void *memchr(const void *s, int c, size_t n)
             return (void *)(s + i);
         }
     }
+
     return NULL;
 }
 
 void *memcpy(void *dest, const void *source, size_t n)
 {
-    for (size_t i = 0; i < n; ++i) {
-        ((char *)dest)[i] = ((char *)source)[i];
+    uint32_t *qword_dest = (uint32_t *)dest;
+    uint32_t *qword_source = (uint32_t *)source;
+
+    size_t dwords = n / sizeof(*qword_dest);
+    size_t remining_bytes = n % sizeof(*qword_dest);
+
+    for (size_t dword = 0; dword < dwords; ++dword) {
+        qword_dest[dword] = qword_source[dword];
+    }
+
+    char *dest_reminder = (char *)dest + dwords * sizeof(*qword_dest);
+    char *source_reminder = (char *)source + dwords * sizeof(*qword_dest);
+
+    for (size_t i = 0; i < remining_bytes; ++i) {
+        dest_reminder[i] = source_reminder[i];
     }
 
     return dest;
@@ -53,6 +79,7 @@ void *memmove(void *dest, const void *src, size_t n)
     memcpy(buf, src, n); //NOLINT
     memcpy(dest, buf, n); //NOLINT
     kfree(buf);
+
     return dest;
 }
 
@@ -72,6 +99,7 @@ size_t strnlen(const char *const str, size_t max_len)
     while (len < max_len && str[len] != '\0') {
         ++len;
     }
+
     return len;
 }
 
@@ -84,6 +112,7 @@ int strcmp(const char *s1, const char *s2)
         ++s1;
         ++s2;
     }
+
     return *s1 - *s2;
 }
 
@@ -124,6 +153,7 @@ int strcasecmp(const char *s1, const char *s2)
         ++s1;
         ++s2;
     }
+
     return char_s1 - char_s2;
 }
 
@@ -246,6 +276,7 @@ char *strchr(const char *s, int c)
         }
         ++s;
     }
+
     return NULL;
 }
 
