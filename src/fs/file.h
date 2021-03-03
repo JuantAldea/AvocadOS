@@ -58,7 +58,7 @@ struct filesystem_operations_t {
 
 int fopen(const char *const filename, const char *str_mode);
 int fclose(int fileno);
-int fread(int fd, void *ptr, uint32_t size, uint32_t nmemb);
+size_t fread(int fd, void *ptr, uint32_t size, uint32_t nmemb);
 int fseek(int fileno, int32_t offset, enum seek_operation whence);
 int fstat(int fileno, struct stat *buf);
 

@@ -144,12 +144,12 @@ out:
     return res;
 }
 
-int fread(int fd, void *ptr, uint32_t size, uint32_t nmemb)
+size_t fread(int fd, void *ptr, uint32_t size, uint32_t nmemb)
 {
     struct file_descriptor_t *descriptor = file_table.table[fd];
 
     if (!descriptor) {
-        return -EBADF;
+        return 0;
     }
 
     return descriptor->disk->fs_operations->read(descriptor->private_data, size, nmemb, ptr);
