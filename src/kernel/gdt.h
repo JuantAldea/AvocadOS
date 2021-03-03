@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include "../config.h"
 
-struct gdt {
+struct gdt_native {
     uint16_t segment;
     uint16_t base_addr_0_15_bits;
     uint8_t base_addr_16_23_bits;
@@ -19,12 +19,12 @@ struct gdt_structure {
     uint8_t type;
 };
 
-extern struct gdt gdt_native[GDT_SEGMENTS];
+extern struct gdt_native gdt_native[GDT_SEGMENTS];
 extern struct tss tss;
 extern struct gdt_structure gdt_segments[GDT_SEGMENTS];
 
 void gdt_segments_init_and_load();
 
-void gdt_load(struct gdt *gdt, int size);
+void gdt_load(struct gdt_native *gdt, int size);
 
 #endif

@@ -5,9 +5,9 @@
 
 #include "task/tss.h"
 
-struct gdt gdt_native[GDT_SEGMENTS];
+struct gdt_native gdt_native[GDT_SEGMENTS];
 struct gdt_structure gdt_segments[GDT_SEGMENTS];
-void gdt_structures_to_native_gdts(struct gdt *gdt, struct gdt_structure *structure, int total_entries);
+void gdt_structures_to_native_gdts(struct gdt_native *gdt, struct gdt_structure *structure, int total_entries);
 void gdt_structure_to_native(uint8_t *target, struct gdt_structure *structure);
 
 void gdt_segments_init_and_load()
@@ -57,7 +57,7 @@ void gdt_structure_to_native(uint8_t *target, struct gdt_structure *structure)
     target[5] = structure->type;
 }
 
-void gdt_structures_to_native_gdts(struct gdt *gdt, struct gdt_structure *structure, int total_entries)
+void gdt_structures_to_native_gdts(struct gdt_native *gdt, struct gdt_structure *structure, int total_entries)
 {
     for (int i = 0; i < total_entries; ++i) {
         gdt_structure_to_native((uint8_t *)&gdt[i], &structure[i]);

@@ -58,7 +58,7 @@ void kernel_main(void)
 
     tss.esp = 0x600000;
     tss.ss0 = KERNEL_DATA_SELECTOR;
-    tss_load(sizeof(struct gdt) * 5);
+    tss_load(sizeof(struct gdt_native) * 5);
 
     kernel_page_directory = paging_init_4gb_directory(PAGING_WRITABLE_PAGE | PAGING_PRESENT | PAGING_ACCESS_FROM_ALL);
     paging_switch_directory(kernel_page_directory);
