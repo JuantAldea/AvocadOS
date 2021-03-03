@@ -1,7 +1,9 @@
 #ifndef __HEAP_H
 #define __HEAP_H
+
 #include <stddef.h>
 #include <stdint.h>
+
 #define HEAP_MEMORY_BLOCK_FREE 0x0
 #define HEAP_MEMORY_BLOCK_TAKEN 0x1
 
@@ -32,6 +34,7 @@ struct heap_table {
 struct heap {
     struct heap_table *table;
     void *base_addr;
+    size_t last_allocated_block;
 };
 
 int heap_create(struct heap *heap, void *addr, void *end_addr, struct heap_table *heap_table);

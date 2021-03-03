@@ -60,10 +60,11 @@ int find_first_block(struct heap *heap, size_t n_blocks)
     int remaining_blocks = n_blocks;
     int found_block = -1;
 
-    for (size_t i = 0; (i < heap_table->len) && remaining_blocks; ++i) {
+    for (size_t i = heap->last_allocated_block + 1; (i != heap->last_allocated_block) && remaining_blocks; i = (i + 1) % heap_table->len) {
         if (BLOCK_TEST_TAKEN(heap_entries[i])) {
             found_block = -1;
             remaining_blocks = n_blocks;
+            heap->last_allocated_block = 0;
             continue;
         }
 
@@ -72,9 +73,10 @@ int find_first_block(struct heap *heap, size_t n_blocks)
         }
 
         --remaining_blocks;
+        heap->last_allocated_block = i;
     }
 
-    if (found_block == -1) {
+    if (remaining_blocks) {
         return -ENOMEM;
     }
 
