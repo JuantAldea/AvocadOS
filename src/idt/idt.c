@@ -3,6 +3,7 @@
 #include "../string/string.h"
 #include "../termio/termio.h"
 #include "../io/io.h"
+#include "../kernel/registers.h"
 
 struct idt_desc idt_descriptors[KERNEL_TOTAL_INTERRUPTS];
 struct idtr_desc idtr_descriptor;
@@ -37,18 +38,6 @@ void no_int_handler(uint32_t int_no)
     //print("No Int handler\n");
     outb(0x20, 0x20);
 }
-
-//TODO uintptr_t?
-struct registers {
-    // Data segment selector
-    uint32_t ds;
-    // Pushed by pusha.
-    uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
-    // Interrupt number and error code (if applicable)
-    uint32_t int_no, err_code;
-    // Pushed by the processor automatically.
-    uint32_t eip, cs, eflags, useresp, ss;
-};
 
 void isr_dispatcher(struct registers regs)
 {
