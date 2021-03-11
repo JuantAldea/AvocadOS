@@ -37,7 +37,7 @@ int file_table_open_file(struct file_descriptor_t *descriptor)
     descriptor->fileno = index;
     file_table.table[index] = descriptor;
 
-    return 0;
+    return index;
 }
 
 int file_table_close_file(struct file_descriptor_t *descriptor)

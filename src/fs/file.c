@@ -59,16 +59,16 @@ int fopen(const char *const filename, const char *str_mode)
         return -EINVAL;
     }
 
-    int res = 0;
     struct path_root *path = pathparser_path_parse(filename);
 
-    if (!path) {
-        return -ENOMEM;
-    }
-
-    if (!path->first) {
+    if (!path || !path->first) {
+        if (path && !path->first) {
+            pathparse_path_free(path);
+        }
         return -EINVAL;
     }
+
+    int res = 0;
 
     struct file_descriptor_t *descriptor = kzalloc(sizeof(struct file_descriptor_t));
     if (!descriptor) {
@@ -100,10 +100,8 @@ int fopen(const char *const filename, const char *str_mode)
     res = file_table_open_file(descriptor);
 
 out:
-    if (res) {
-        if (path) {
-            pathparse_path_free(path);
-        }
+    if (res < 0) {
+        pathparse_path_free(path);
 
         if (descriptor && descriptor->disk->fs_operations && descriptor->private_data) {
             descriptor->disk->fs_operations->close(descriptor->private_data);
