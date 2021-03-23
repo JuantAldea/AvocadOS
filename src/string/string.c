@@ -229,7 +229,7 @@ char digit_to_char(const int c)
     return '0' + c;
 }
 
-void itoa(const int c, char *buf)
+void itoa(const int64_t c, char *buf)
 {
     int shifter = c;
     char *ptr = buf;

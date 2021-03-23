@@ -2,6 +2,8 @@
 #define __STRING_H
 
 #include <stddef.h>
+#include <stdint.h>
+
 #include <stdbool.h>
 
 void *memset(void *ptr, int c, size_t size);
@@ -26,7 +28,7 @@ char *strchr(const char *s, int c);
 bool is_digit(const char c);
 int numeric_char_to_digit(const char c);
 char digit_to_char(const int c);
-void itoa(const int c, char *buf);
+void itoa(const int64_t c, char *buf);
 
 int to_lower(const char c);
 int to_upper(const char c);
