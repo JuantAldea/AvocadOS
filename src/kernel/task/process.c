@@ -8,12 +8,54 @@
 #include "../../kernel/panic.h"
 #include "../../memory/paging.h"
 
+#include "../../termio/termio.h"
+
+struct process *idle_process;
+
+void idle_function()
+{
+    while (1) {
+        print("IDLE TASK\n");
+        asm volatile("hlt");
+    }
+}
+
 struct process *current_process = NULL;
 static struct process *processes[MAX_PROCESSES] = { 0 };
 
-static void process_init(struct process *process)
+struct process *process_current()
 {
-    memset(process, 0, sizeof(*process)); //NOLINT
+    return current_process;
+}
+
+struct process *process_next()
+{
+    return current_process->next;
+}
+
+struct process *process_previous()
+{
+    return current_process->previous;
+}
+
+struct process *process_list_insert(struct process *process)
+{
+    process->previous = current_process->previous;
+    process->next = current_process;
+
+    current_process->previous = process;
+    process->previous->next = process;
+
+    return process;
+}
+
+struct process *process_list_remove(struct process *process)
+{
+    process->previous->next = process->next;
+    process->next->previous = process->previous;
+    process->next = NULL;
+    process->previous = NULL;
+    return process;
 }
 
 struct process *process_get(int pid)
@@ -25,70 +67,58 @@ struct process *process_get(int pid)
     return processes[pid];
 }
 
-static int process_load_binary(const char *filename, struct process *process)
+static int process_load_binary(const char *filename, void **memory, uint32_t *len)
 {
     int res = 0;
+    *memory = NULL;
 
-    int fd = fopen(filename, "r");
+    struct FILE *fd = fopen(filename, "r");
 
-    if (fd < 0) {
-        res = fd;
+    if (!fd) {
+        res = -EIO;
         goto out;
     }
 
     struct stat file_stat;
-    res = fstat(fd, &file_stat);
+    res = fstat(fd->fileno, &file_stat);
 
     if (res) {
         goto out;
     }
 
-    process->memory = kzalloc(file_stat.st_size);
+    *memory = kzalloc(file_stat.st_size);
 
-    if (!process->memory) {
+    if (!*memory) {
         res = -ENOMEM;
         goto out;
     }
 
-    size_t read_bytes = fread(fd, process->memory, file_stat.st_size, 1);
+    size_t read_bytes = fread(*memory, file_stat.st_size, 1, fd);
 
     if (read_bytes != file_stat.st_size) {
         res = -EIO;
         goto out;
     }
 
-    process->memory_size = file_stat.st_size;
+    *len = file_stat.st_size;
 
 out:
     fclose(fd);
 
     if (res) {
-        if (fd >= 0) {
+        if (fd) {
             fclose(fd);
         }
 
-        if (process->memory) {
-            kfree(process->memory);
+        if (*memory) {
+            kfree(*memory);
+            *memory = NULL;
         }
+
+        *len = 0;
     }
 
     return res;
-}
-
-static int process_load_data(const char *filename, struct process *process)
-{
-    return process_load_binary(filename, process);
-}
-
-int process_map_binary(struct process *process)
-{
-    if (!process || !process->task) {
-        panic("PROCESS BROKEN");
-    }
-
-    return paging_map_from_to(process->task->page_directory, (void *)PROGRAM_BASE_VIRT_ADDR, process->memory,
-                              paging_align_address(process->memory + process->memory_size),
-                              PAGING_WRITABLE_PAGE | PAGING_ACCESS_FROM_ALL | PAGING_PRESENT);
 }
 
 int process_map_memory(struct process *process)
@@ -97,29 +127,81 @@ int process_map_memory(struct process *process)
         panic("PROCESS MEMORY NOT LOADED");
     }
 
-    return process_map_binary(process);
-}
-
-int process_load_for_slot(const char *filename, struct process **process, int slot)
-{
-    if (process_get(slot)) {
-        return -EINVAL;
+    if (!process) {
+        panic("PROCESS BROKEN");
     }
 
-    struct process *_process = kzalloc(sizeof(*_process));
+    if (!process->task) {
+        panic("NO PROCESS TASK");
+    }
+
+    // map code
+    int res = paging_map_from_to(process->page_directory, (void *)PROGRAM_BASE_VIRT_ADDR, process->memory,
+                                 paging_align_address(process->memory + process->memory_size),
+                                 PAGING_WRITABLE_PAGE | PAGING_ACCESS_FROM_ALL | PAGING_PRESENT);
+    if (res) {
+        goto out;
+    }
+
+    // map stack
+    res = paging_map_from_to(process->page_directory, (void *)PROGRAM_STACK_END, process->stack,
+                             paging_align_address(process->stack + PROGRAM_STACK_SIZE),
+                             PAGING_PRESENT | PAGING_ACCESS_FROM_ALL | PAGING_WRITABLE_PAGE);
+    if (res) {
+        goto out;
+    }
+
+    if (res) {
+        goto out;
+    }
+out:
+    return res;
+}
+
+void process_init_process_stack(struct process *process)
+{
+    struct isr_data isr_data;
+    //task_fill_isr_frame(process->task, &isr_data);
+    memcpy(&(((uint8_t *)(process->stack))[PROGRAM_STACK_SIZE - 1]) - sizeof(isr_data), &isr_data, sizeof(isr_data)); //NOLINT
+}
+
+void init_idle_process()
+{
+    void *memory;
+    uint32_t memory_size;
+    process_load_binary("0:/TRAP.BIN", &memory, &memory_size);
+    process_init("Idle Process", memory, memory_size, 0, 0, &processes[0]);
+    processes[0]->stack = kzalloc(PROGRAM_STACK_SIZE);
+    processes[0]->task = task_init_idle_task(processes[0]);
+    process_map_memory(processes[0]);
+    process_init_process_stack(processes[0]);
+
+    processes[0]->next = processes[0];
+    processes[0]->previous = processes[0];
+    current_process = processes[0];
+}
+
+int process_init(const char *name, void *memory, uint32_t memory_size, int privileged, int slot, struct process **process)
+{
+    int res = 0;
+
+    *process = kzalloc(sizeof(struct process));
+    struct process *_process = *process;
 
     if (!_process) {
         return -ENOMEM;
     }
 
-    process_init(_process);
+    _process->page_directory = paging_init_4gb_directory(PAGING_PRESENT | PAGING_ACCESS_FROM_ALL);
 
-    _process->pid = slot;
-
-    int res = process_load_data(filename, _process);
-    if (res) {
+    if (!_process->page_directory) {
+        res = -ENOMEM;
         goto out;
     }
+
+    _process->pid = slot;
+    _process->memory_size = memory_size;
+    _process->memory = memory;
 
     _process->stack = kzalloc(PROGRAM_STACK_SIZE);
 
@@ -128,9 +210,14 @@ int process_load_for_slot(const char *filename, struct process **process, int sl
         goto out;
     }
 
-    strncpy(_process->filename, filename, sizeof(_process->filename)); //NOLINT
+    strncpy(_process->name, name, sizeof(_process->name)); //NOLINT
 
-    _process->task = task_new(_process);
+    _process->task = task_new(_process, privileged);
+
+    if (!_process->task) {
+        res = -ENOMEM;
+        goto out;
+    }
 
     // handle error in task
 
@@ -139,8 +226,6 @@ int process_load_for_slot(const char *filename, struct process **process, int sl
         goto out;
     }
 
-    *process = _process;
-    processes[slot] = _process;
 out:
     if (IS_ERROR(res)) {
         if (_process) {
@@ -150,6 +235,10 @@ out:
 
             if (_process->memory) {
                 kfree(_process->memory);
+            }
+
+            if (_process->page_directory) {
+                paging_free_4gb_directory(_process->page_directory);
             }
 
             if (_process->task) {
@@ -163,19 +252,27 @@ out:
     return res;
 }
 
-int process_load(const char *filename, struct process **process)
+int process_load(const char *filename)
 {
-    int slout_found = -1;
+    int slot_found = -1;
     for (int i = 0; i < MAX_PROCESSES; i++) {
         if (!process_get(i)) {
-            slout_found = i;
+            slot_found = i;
             break;
         }
     }
 
-    if (slout_found < 0) {
+    if (slot_found < 0) {
         return -ENOMEM;
     }
 
-    return process_load_for_slot(filename, process, slout_found);
+    void *memory;
+    uint32_t memory_size;
+    process_load_binary(filename, &memory, &memory_size);
+    return process_init("Idle Process", memory, memory_size, 1, slot_found, &processes[slot_found]);
+}
+
+void process_switch_directory(struct process *process)
+{
+    paging_switch_directory(process->page_directory);
 }

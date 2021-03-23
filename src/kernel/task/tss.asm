@@ -1,6 +1,5 @@
 section .text
-global tss_load
-
+global tss_load:function
 tss_load:
     push ebp
     mov ebp, esp

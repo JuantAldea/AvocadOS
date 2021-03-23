@@ -37,6 +37,6 @@ extern struct tss tss;
 
 void gdt_segments_init();
 
-void tss_load(int tss_segment);
+extern void tss_load(int tss_segment);
 
 #endif
