@@ -1,7 +1,11 @@
 [BITS 32]
+
+%include "build/asm_constants.inc"
+
 section .text
 
 global idt_load
+global load_kernel_segments
 
 idt_load:
     push ebp
@@ -15,9 +19,14 @@ idt_load:
     pop ebp
     ret
 
-%macro GENERATE_ISR_ROUTINES 1  ; macro, one parameter
+%macro GENERATE_ISR_NO_ERROR_CODE_ROUTINES 1  ; macro, one parameter
     GENERATE_RAISE_INT %1
-    ISR %1
+    ISR_NO_ERROR_CODE %1
+%endmacro
+
+%macro GENERATE_ISR_ERROR_CODE_ROUTINES 1  ; macro, one parameter
+    GENERATE_RAISE_INT %1
+    ISR_ERROR_CODE %1
 %endmacro
 
 %macro GENERATE_RAISE_INT 1  ; macro, one parameter
@@ -27,7 +36,7 @@ idt_load:
         ret
 %endmacro
 
-%macro ISR 1  ; macro, one parameter
+%macro ISR_NO_ERROR_CODE 1  ; macro, one parameter
     [GLOBAL isr_%1]
     isr_%1:
         cli
@@ -36,40 +45,68 @@ idt_load:
         jmp isr_wrapper
 %endmacro
 
+%macro ISR_ERROR_CODE 1  ; macro, one parameter
+    [GLOBAL isr_%1]
+    isr_%1:
+        cli
+        push byte %1
+        jmp isr_wrapper
+%endmacro
+
 extern isr_dispatcher
 
 isr_wrapper:
+    ; pushed so far
+    ; by cpu:
+    ;   ss, esp, eflags, cs, eip
+    ; by us:
+    ;   errcode, isr number
+
+    ; Kernel -> kernel
+    ;   SS: unchanged
+    ;   ESP new frame pushed
+    ;   CS:EIP from IDT
+
+    ; User -> kernel
+    ;   SS:ESP TSS { ss0:esp0}
+    ;   CS:EIP from IDT
+    ;   EFLAGS:
+
     pushad                    ; Pushes edi,esi,ebp,esp,ebx,edx,ecx,eax
+    ; save previous segments
+    push ds
+    push es
+    push fs
+    push gs
+    ; cs is pushed by the CPU
 
-    mov ax, ds               ; Lower 16-bits of eax = ds.
-    push eax                 ; save the data segment descriptor
+    ; switch to kernel segments
 
-    mov ax, 0x10  ; load the kernel data segment descriptor
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
+    push esp
 
     call isr_dispatcher
+    add esp, 4
 
-    pop eax        ; reload the original data segment descriptor
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
+    ; restore segments
+    pop gs
+    pop fs
+    pop es
+    pop ds
 
-    popad  ; Pops edi,esi,ebp...
+    ; restore registers
+    popad  ; Pops pushad
     add esp, 8     ; Cleans up the pushed error code and pushed ISR number
     sti
     iret           ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP
 
-GENERATE_ISR_ROUTINES 0x0
-GENERATE_ISR_ROUTINES 0x1
-GENERATE_ISR_ROUTINES 0x2
-GENERATE_ISR_ROUTINES 0x3
-GENERATE_ISR_ROUTINES 0x4
-GENERATE_ISR_ROUTINES 0x20
-GENERATE_ISR_ROUTINES 0x21
+GENERATE_ISR_NO_ERROR_CODE_ROUTINES 0x0
+GENERATE_ISR_NO_ERROR_CODE_ROUTINES 0x1
+GENERATE_ISR_NO_ERROR_CODE_ROUTINES 0x2
+GENERATE_ISR_NO_ERROR_CODE_ROUTINES 0x3
+GENERATE_ISR_NO_ERROR_CODE_ROUTINES 0x4
+GENERATE_ISR_NO_ERROR_CODE_ROUTINES 0x20
+GENERATE_ISR_NO_ERROR_CODE_ROUTINES 0x21
+GENERATE_ISR_ERROR_CODE_ROUTINES 0xE
 
 [GLOBAL no_interrupt]
 [EXTERN no_int_handler]
@@ -89,4 +126,12 @@ enable_interrupts:
 [GLOBAL disable_interrupts]
 disable_interrupts:
     cli
+    ret
+
+load_kernel_segments:
+    mov ax, GDT_KERNEL_DATA_SEGMENT_SELECTOR  ; load the kernel data segment descriptor
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
     ret

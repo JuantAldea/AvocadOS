@@ -4,23 +4,46 @@
 #include "../termio/termio.h"
 #include "../string/string.h"
 #include "memcheck.h"
+#include "../kernel/panic.h"
 
 struct heap kernel_heap;
 struct heap_table kheap_table;
 
-void kheap_init()
+/*
+uintptr_t early_kmalloc_current_pos;
+void *early_kzalloc(size_t len)
 {
-    kheap_table.entries = (HEAP_TABLE_ENTRY *)KERNEL_HEAP_TABLE_ADDRESS;
-    kheap_table.len = KERNEL_HEAP_SIZE / KERNEL_HEAP_BLOCK_SIZE;
-    void *end = (void *)(KERNEL_HEAP_ADDRESS + KERNEL_HEAP_SIZE);
-    if (heap_create(&kernel_heap, (void *)KERNEL_HEAP_ADDRESS, end, &kheap_table)) {
-        print("Error creating kheap\n");
-    //PANIC
-    trap:
-        goto trap;
+    void *ptr = (void *)early_kmalloc_current_pos;
+
+    if (!paging_addr_is_page_aligned(ptr)) {
+        panic("early_kmalloc: paging_addr_is_page_aligned: false ");
     }
+
+    len = PAGING_PAGE_SIZE * ((len + PAGING_PAGE_SIZE - 1) / PAGING_PAGE_SIZE);
+
+    early_kmalloc_current_pos += len;
+
+    memset(ptr, 0, len); //NOLINT
+
+    bitmap_begin[PAGE_BITMAP_INDEX(bitmap_begin)] = 1;
+
+    return ptr;
+}
+*/
+
+void kheap_init(uintptr_t addr)
+{
+    addr = (addr & 0xFFF) ? (addr & ~0xFFF) + 0x1000 : addr;
+    kheap_table.entries = (HEAP_TABLE_ENTRY *)addr;
+    kheap_table.len = KERNEL_HEAP_SIZE / KERNEL_HEAP_BLOCK_SIZE;
+    void *end = (void *)(addr + KERNEL_HEAP_SIZE);
+    if (heap_create(&kernel_heap, (void *)addr, end, &kheap_table)) {
+        panic("Error creating kheap\n");
+    }
+
 #ifdef MEMCHECK
     memcheck_table_init(kheap_table.len);
+    memcheck_allocate((void *)addr, kheap_table.len, __FILE__, __FUNCTION__, __LINE__);
 #endif
 }
 

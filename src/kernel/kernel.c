@@ -14,6 +14,10 @@
 #include "gdt.h"
 #include "task/tss.h"
 #include "task/task.h"
+#include "task/process.h"
+#include "panic.h"
+
+extern void *_kernel_end;
 
 void kernel_splash()
 {
@@ -25,7 +29,7 @@ void kernel_splash()
     terminal_put_str("               \\_/ \\_/ \\_/  \\___/  \\___|\\__,_| \\__,_|\\___/  \\__/\n", 2);
 }
 
-static struct page_directory_handle *kernel_page_directory = NULL;
+struct page_directory_handle kernel_page_directory;
 
 void print_path(struct path_root *path)
 {
@@ -43,34 +47,64 @@ void print_path(struct path_root *path)
     }
 }
 
-void kernel_main(void)
+void __attribute__((noreturn)) kernel_main()
 {
     terminal_init();
-    kernel_splash();
-    gdt_segments_init_and_load();
 
-    kheap_init();
+    kheap_init(&_kernel_end);
+    paging_init(KERNEL_HEAP_SIZE);
+
+    kernel_splash();
+
+    gdt_segments_init_and_load();
 
     //print("Init kheap\n");
 
     idt_init();
     //print("Setup interrupts\n");
 
-    tss.esp = 0x600000;
-    tss.ss0 = KERNEL_DATA_SELECTOR;
+    tss.esp0 = 0x600000;
+    tss.ss0 = GDT_KERNEL_DATA_SEGMENT_SELECTOR;
     tss_load(sizeof(struct gdt_native) * 5);
 
-    kernel_page_directory = paging_init_4gb_directory(PAGING_WRITABLE_PAGE | PAGING_PRESENT | PAGING_ACCESS_FROM_ALL);
-    paging_switch_directory(kernel_page_directory);
+    file_table_init();
+    fs_init();
+    disk_init();
+    print("\n\nContents of ");
+    char path[] = "0:/MOTD.TXT";
+    print(path);
+    print(":");
 
-    enable_paging();
-    task_init();
-    task_new();
-    task_new();
-    task_new();
-    task_new();
-    task_new();
-    print_tasks();
+    struct FILE *des = fopen(path, "r");
+    if (!des) {
+        panic("Error opening file\n");
+    }
+
+    //char buffer[65536] = { 0 };
+    struct stat file_info;
+    fstat(des->fileno, &file_info);
+
+    char *buffer = kzalloc(file_info.st_size);
+
+    int read = fread(buffer, 1, file_info.st_size, des);
+    if (read < 0) {
+        panic("Error reading file\n");
+    }
+
+    terminal_init();
+    print_char('\n');
+    print(buffer);
+    enable_interrupts();
+
+    /*
+    //kernel_page_directory = paging_init_4gb_directory(PAGING_WRITABLE_PAGE | PAGING_PRESENT | PAGING_ACCESS_FROM_ALL);
+    //paging_switch_directory(kernel_page_directory);
+
+    //enable_paging();
+
+    //task_init_initial_task();
+
+    //print_tasks();
 
     //print("Enabled paging\n");
 
@@ -79,34 +113,43 @@ void kernel_main(void)
     file_table_init();
     fs_init();
     disk_init();
-
-    enable_interrupts();
+    //init_idle_process();
+    //enable_interrupts();
     //print("Enabled interrupts\n");
     print("\n\nContents of ");
     char path[] = "0:/MOTD.TXT";
     print(path);
     print(":");
 
-    int des = fopen(path, "r");
-    if (des < 0) {
-        print("Error opening file\n");
-        goto trap;
+    struct FILE *des = fopen(path, "r");
+    if (!des) {
+        panic("Error opening file\n");
     }
 
     char buffer[65536] = { 0 };
 
-    int read = fread(des, buffer, 1, sizeof(buffer));
+    int read = fread(buffer, 1, sizeof(buffer), des);
     struct stat file_info;
-    fstat(des, &file_info);
+    fstat(des->fileno, &file_info);
     if (read < 0) {
-        print("Error reading file\n");
-        goto trap;
+        panic("Error reading file\n");
+    }
+
+    struct FILE *des2 = fopen(path, "r");
+    if (!des) {
+        panic("Error opening file\n");
+    }
+
+    char buffer2[65536] = { 0 };
+
+    int read2 = fread(buffer2, 1, sizeof(buffer2), des2);
+    if (read2 < 0) {
+        panic("Error reading file\n");
     }
 
     int ret = fclose(des);
     if (ret) {
-        print("Error closing file\n");
-        goto trap;
+        panic("Error closing file\n");
     }
 
     print_char('\n');
@@ -119,8 +162,9 @@ void kernel_main(void)
     //print("\nBlocks in use at exit: ");
     //print(buffer);
     //print_char('\n');
+    */
 
-    //print("\n\nDone, for now\n");
-trap:
-    goto trap;
+    print("\n\nDone, for now\n");
+end:
+    goto end;
 }

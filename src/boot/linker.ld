@@ -3,8 +3,7 @@
 SEARCH_DIR(src)
 INCLUDE linker_defines.ld
 
-ENTRY(_start) /* entry point */
-/*OUTPUT_FORMAT(binary)  /* plain binary, no elf, nothing fancy just yet */
+ENTRY(_fat_header_start) /* entry point, only used by elf loaders */
 OUTPUT_FORMAT(elf32-i386)
 SECTIONS
 {
@@ -30,10 +29,5 @@ SECTIONS
     {
         *(COMMON)
         *(.bss)
-    }
-
-    .asm : ALIGN(4096)
-    {
-        *(.asm)
     }
 }

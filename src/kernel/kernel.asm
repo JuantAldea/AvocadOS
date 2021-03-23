@@ -1,27 +1,59 @@
 [BITS 32]
+
+%include "build/asm_constants.inc"
+
+KERNEL_VIRTUAL_BASE equ 0xC0000000
+KERNEL_BASE_PAGE_NUMBER equ (KERNEL_VIRTUAL_BASE >> 22)
+PSE_BIT     equ 0x00000010
+PG_BIT      equ 0x80000000
+
+section .data
+align 4096
+global BOOT_PAGE_DIRECTORY
+BOOT_PAGE_DIRECTORY:
+    dd 0x00000083
+    times (KERNEL_BASE_PAGE_NUMBER - 1) dd 0
+    dd 0x00000083
+    times (1024 - KERNEL_BASE_PAGE_NUMBER - 1) dd 0
+
+section .bss
+align 4
+stack_top:
+    resb 104856
+stack_bottom:
+
 section .text
-[GLOBAL _start_kernel] ; export symbol
-[EXTERN kernel_main] ; "forward-declaration" of kernel_main (kernel.c)
+global kernel_trampoline_low
+kernel_trampoline_low equ (kernel_trampoline - KERNEL_VIRTUAL_BASE)
+kernel_trampoline:
+    mov ecx, (BOOT_PAGE_DIRECTORY - KERNEL_VIRTUAL_BASE)
+    mov cr3, ecx
 
-CODE_SEG equ 0x08
-DATA_SEG equ 0x10
+    mov ecx, cr4
+    or ecx, PSE_BIT
+    mov cr4, ecx
 
-_start_kernel:
-    mov ax, DATA_SEG
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
-    mov ss, ax
-    ; set stack pointer
-    mov ebp, 0x00200000
-    mov esp, ebp
+    mov ecx, cr0
+    or ecx, PG_BIT
+    mov cr0, ecx
+
+    lea ecx, [higher_half]
+    jmp ecx
+
+higher_half:
+    mov esp, stack_bottom
+    xor ebp, ebp
+
+    ;mov esp, ebp
 
     call remap_master_pic
-    xor ebp, ebp ; requiered for stack unwinding
-    call kernel_main;
 
-    jmp $ ;trap
+    extern kernel_main
+    push eax
+    push ebx
+    call kernel_main
+    cli
+    jmp $
 
 ; Programmable Interrupt Controller
 remap_master_pic:
@@ -47,3 +79,4 @@ remap_master_pic:
 ; 512 bytes, hence preserving the 16 byte aligment of whatever comes after.
 ; 512 % 16 == 0
 ;times 512 - ($ - $$) db 0;
+; Handled by the linker script

@@ -12,13 +12,12 @@ void gdt_structure_to_native(uint8_t *target, struct gdt_structure *structure);
 
 void gdt_segments_init_and_load()
 {
-    //gdt_segments[0].base = gdt_segments[0].limit = gdt_segments[0].type = 0;
-    gdt_segments[0] = (struct gdt_structure){ .base = 0, .limit = 0, .type = 0 }; //kernel code
-    gdt_segments[1] = (struct gdt_structure){ .base = 0, .limit = 0xffffffff, .type = 0x9a }; //kernel code
-    gdt_segments[2] = (struct gdt_structure){ .base = 0, .limit = 0xffffffff, .type = 0x92 }; // kernel data
-    gdt_segments[3] = (struct gdt_structure){ .base = 0, .limit = 0xffffffff, .type = 0xf8 }; // user code
-    gdt_segments[4] = (struct gdt_structure){ .base = 0, .limit = 0xffffffff, .type = 0xf2 }; // user data
-    gdt_segments[5] = (struct gdt_structure){ .base = (uintptr_t)&tss, .limit = sizeof(tss), .type = 0xE9 }; // TSS
+    gdt_segments[GDT_NULL_SEGMENT] = (struct gdt_structure){ .base = 0, .limit = 0, .type = 0 }; //kernel code
+    gdt_segments[GDT_KERNEL_CODE_SEGMENT] = (struct gdt_structure){ .base = 0, .limit = 0xffffffff, .type = 0x9a }; //kernel code
+    gdt_segments[GDT_KERNEL_DATA_SEGMENT] = (struct gdt_structure){ .base = 0, .limit = 0xffffffff, .type = 0x92 }; // kernel data
+    gdt_segments[GDT_USER_CODE_SEGMENT] = (struct gdt_structure){ .base = 0, .limit = 0xffffffff, .type = 0xf8 }; // user code
+    gdt_segments[GDT_USER_DATA_SEGMENT] = (struct gdt_structure){ .base = 0, .limit = 0xffffffff, .type = 0xf2 }; // user data
+    gdt_segments[GDT_TSS_SEGMENT] = (struct gdt_structure){ .base = (uintptr_t)&tss, .limit = sizeof(tss), .type = 0xE9 }; // TSS
 
     memset(&tss, 0, sizeof(tss)); //NOLINT
 

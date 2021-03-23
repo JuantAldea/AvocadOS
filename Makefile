@@ -23,13 +23,19 @@ CC = i686-elf-gcc
 LD = i686-elf-ld
 
 TARGET = bin/image.bin
-QEMU_RUN_COMMAND = qemu-system-i386 -hda $(TARGET)
+QEMU_RUN_COMMAND = qemu-system-i386 -d int,cpu_reset -hda $(TARGET)
 
-.phony: all folder run gdb clean
+.phony: all folder run gdb clean user_programs autogen
 
-all: $(TARGET)
+all: autogen user_programs $(TARGET)
+
 scan-build:
 	scan-build --use-cc=$(CC) --analyzer-target=i386 make
+
+autogen: build/asm_constants.inc
+
+build/asm_constants.inc: autogen/generate_asm_constants.c
+	$(CC) $(CFLAGS) -S -masm=intel autogen/generate_asm_constants.c -o - | gawk '($$1 == "->"){ print "%define " $$3 " " $$4}' > build/asm_constants.inc
 
 $(TARGET): bin/boot.bin bin/kernel.bin
 	dd if=bin/boot.bin > $@
@@ -39,8 +45,8 @@ $(TARGET): bin/boot.bin bin/kernel.bin
 	mkdir -p mnt
 	#fusefat -o rw+ $@ mnt/
 	sudo mount -t vfat bin/image.bin mnt/
-	echo "Would you fancy some avocados?" > motd.txt
-	sudo cp motd.txt mnt/
+	sudo bash -c "echo \"Would you fancy some avocados?\" > mnt/MOTD.txt"
+	sudo cp programs/build/trap.bin mnt/TRAP.BIN
 	#sudo cp frag.txt mnt/
 	#sudo cp inferno.txt mnt/
 	sudo mkdir mnt/folder1
@@ -94,6 +100,11 @@ build/boot/boot.asm.o: $(BOOT_FILES)
 	@mkdir -p $(@D)
 	nasm -f elf -g -F dwarf -i $(dir $<) src/boot/boot.asm -o $@
 
+user_programs:
+	cd programs/ && $(MAKE) all
+
+programs_clean:
+	cd programs/ && $(MAKE) clean
 ##########################################
 ##########################################
 
@@ -101,13 +112,14 @@ run: all
 	$(QEMU_RUN_COMMAND)
 
 gdb: all
-	gdb \
+	gdb -tui \
 	-ex "set confirm off" \
 	-ex "add-symbol-file build/boot/boot.elf 0x7c00 " \
 	-ex "add-symbol-file build/kernel/kernel.elf 0x0100000 " \
+	-ex "add-symbol-file build/kernel/kernel.elf 0xc0100000 " \
 	-ex "target remote | $(QEMU_RUN_COMMAND) -S -gdb stdio" \
 	-ex "break kernel_main"
 
-clean:
+clean: programs_clean
 	rm -rf bin/*
 	rm -rf build/*

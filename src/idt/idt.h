@@ -2,6 +2,7 @@
 #define __IDT_H
 
 #include <stdint.h>
+#include "../cpu.h"
 
 struct idt_desc {
     uint16_t offset_1; // offset bits 0-15
@@ -27,6 +28,37 @@ struct idtr_desc {
     uintptr_t base; //base pointer of the IDT
     //struct idt_desc *base; //base pointer of the IDT
 
+} __attribute__((packed));
+
+struct isr_data {
+    // segment selectors
+    uint32_t gs;
+    uint32_t fs;
+    uint32_t es;
+    uint32_t ds;
+    // pushed by pushad
+    struct general_purpose_registers regs;
+    // Interrupt number and error code (if applicable)
+    uint32_t int_no;
+    uint32_t err_code;
+    // Pushed by the processor automatically.
+    struct isr_frame isr_frame;
+} __attribute__((packed));
+
+struct segment_registers {
+    uint32_t gs;
+    uint32_t fs;
+    uint32_t es;
+    uint32_t ds;
+    uint32_t cs;
+    uint32_t ss;
+} __attribute__((packed));
+
+struct process_state {
+    struct segment_registers segments;
+    uint32_t eflags;
+    uint32_t eip;
+    struct general_purpose_registers regs;
 } __attribute__((packed));
 
 void idt_init();
