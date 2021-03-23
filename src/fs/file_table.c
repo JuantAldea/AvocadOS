@@ -26,7 +26,7 @@ int file_table_find_free_slot()
     return -EMFILE;
 }
 
-int file_table_open_file(struct file_descriptor_t *descriptor)
+int file_table_open_file(struct FILE *descriptor)
 {
     int index = file_table_find_free_slot();
 
@@ -40,7 +40,7 @@ int file_table_open_file(struct file_descriptor_t *descriptor)
     return index;
 }
 
-int file_table_close_file(struct file_descriptor_t *descriptor)
+int file_table_close_file(struct FILE *descriptor)
 {
     if (0 > descriptor->fileno || descriptor->fileno >= file_table.table_len) {
         return -EBADF;
@@ -52,7 +52,7 @@ int file_table_close_file(struct file_descriptor_t *descriptor)
     return 0;
 }
 
-struct file_descriptor_t *file_table_get_descriptor(int fd)
+struct FILE *file_table_get_descriptor(int fd)
 {
 
     if (fd < 0 || fd >= file_table.table_len) {

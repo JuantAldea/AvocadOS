@@ -51,12 +51,12 @@ enum fopen_mode file_mode_from_string(const char *str)
     return OPEN_MODE_INVALID;
 }
 
-int fopen(const char *const filename, const char *str_mode)
+struct FILE* fopen(const char *const filename, const char *str_mode)
 {
     enum fopen_mode mode = file_mode_from_string(str_mode);
 
     if (mode == OPEN_MODE_INVALID) {
-        return -EINVAL;
+        return NULL;
     }
 
     struct path_root *path = pathparser_path_parse(filename);
@@ -65,12 +65,12 @@ int fopen(const char *const filename, const char *str_mode)
         if (path && !path->first) {
             pathparse_path_free(path);
         }
-        return -EINVAL;
+        return NULL;
     }
 
     int res = 0;
 
-    struct file_descriptor_t *descriptor = kzalloc(sizeof(struct file_descriptor_t));
+    struct FILE *descriptor = kzalloc(sizeof(struct FILE));
     if (!descriptor) {
         res = -ENOMEM;
         goto out;
@@ -110,14 +110,15 @@ out:
         if (descriptor) {
             kfree(descriptor);
         }
+        descriptor = NULL;
     }
 
-    return res;
+    return descriptor;
 }
 
-int fclose(int fd)
+int fclose(struct FILE *stream)
 {
-    struct file_descriptor_t *descriptor = file_table.table[fd];
+    struct FILE *descriptor = file_table.table[stream->fileno];
 
     if (!descriptor) {
         return -EBADF;
@@ -142,9 +143,9 @@ out:
     return res;
 }
 
-size_t fread(int fd, void *ptr, uint32_t size, uint32_t nmemb)
+size_t fread(void *ptr, uint32_t size, uint32_t nmemb, struct FILE *stream)
 {
-    struct file_descriptor_t *descriptor = file_table.table[fd];
+    struct FILE *descriptor = file_table.table[stream->fileno];
 
     if (!descriptor) {
         return 0;
@@ -153,9 +154,9 @@ size_t fread(int fd, void *ptr, uint32_t size, uint32_t nmemb)
     return descriptor->disk->fs_operations->read(descriptor->private_data, size, nmemb, ptr);
 }
 
-int fseek(int fd, int32_t offset, enum seek_operation whence)
+int fseek(struct FILE *stream, int32_t offset, enum seek_operation whence)
 {
-    struct file_descriptor_t *descriptor = file_table.table[fd];
+    struct FILE *descriptor = file_table.table[stream->fileno];
 
     if (!descriptor) {
         return -EBADF;
@@ -166,7 +167,7 @@ int fseek(int fd, int32_t offset, enum seek_operation whence)
 
 int fstat(int fd, struct stat *buf)
 {
-    struct file_descriptor_t *descriptor = file_table.table[fd];
+    struct FILE *descriptor = file_table.table[fd];
 
     if (!descriptor) {
         return -EBADF;

@@ -10,11 +10,12 @@ struct filesystem_operations_t *fs_probe_fs(struct disk_t *disk);
 int fs_init();
 int fs_register_fs(struct filesystem_operations_t *operations);
 
-struct file_descriptor_t {
+struct FILE {
     struct disk_t *disk;
     struct path_root *path;
     void *private_data;
     int fileno;
+    int err;
 };
 
 enum seek_operation {
@@ -40,7 +41,7 @@ typedef int (*FS_PROBE)(struct disk_t *disk);
 typedef void *(*FS_OPEN)(struct disk_t *disk, struct path_part *path, enum fopen_mode mode);
 typedef int (*FS_CLOSE)(void *priv);
 typedef size_t (*FS_READ)(void *priv, uint32_t size, uint32_t nmemb, char *out);
-typedef size_t (*FS_WRITE)(struct file_descriptor_t file);
+typedef size_t (*FS_WRITE)(struct FILE file);
 typedef int (*FS_SEEK)(void *priv, int32_t offset, enum seek_operation whence);
 typedef int (*FS_STAT)(void *priv, struct stat *buf);
 typedef int (*FS_UNLINK)(struct path_root *path);
@@ -56,10 +57,10 @@ struct filesystem_operations_t {
     FS_UNLINK unlink;
 };
 
-int fopen(const char *const filename, const char *str_mode);
-int fclose(int fileno);
-size_t fread(int fd, void *ptr, uint32_t size, uint32_t nmemb);
-int fseek(int fileno, int32_t offset, enum seek_operation whence);
+struct FILE *fopen(const char *const filename, const char *str_mode);
+int fclose(struct FILE *stream);
+size_t fread(void *ptr, uint32_t size, uint32_t nmemb, struct FILE *stream);
+int fseek(struct FILE *stream, int32_t offset, enum seek_operation whence);
 int fstat(int fileno, struct stat *buf);
 
 #endif
