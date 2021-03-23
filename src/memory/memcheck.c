@@ -12,6 +12,7 @@ void memcheck_table_init(int size)
 {
     allocation_table_len = size;
     allocation_table = kzalloc(size * sizeof(struct memcheck_entry));
+    memcheck_allocate(allocation_table, size * sizeof(struct memcheck_entry), __FILE__, __FUNCTION__, __LINE__);
 }
 
 void memcheck_allocate(void *ptr, size_t size, const char *const filename, const char *const function, int line)
