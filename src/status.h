@@ -1,7 +1,6 @@
 #ifndef __STATUS_H
 #define __STATUS_H
 
-#define KERNEL_OK 0
 #define EIO              5      /* I/O error */
 #define ENOEXEC          8      /* Exec format error */
 #define EBADF            9      /* Bad file number */

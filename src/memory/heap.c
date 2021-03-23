@@ -19,7 +19,7 @@ static int heap_validate_table(void *ptr, void *end, struct heap_table *table)
         return -EINVAL;
     }
 
-    return KERNEL_OK;
+    return 0;
 }
 
 static bool heap_validate_alignment(void *ptr)
@@ -44,7 +44,7 @@ int heap_create(struct heap *heap, void *ptr, void *end_addr, struct heap_table 
     const size_t table_size = sizeof(HEAP_TABLE_ENTRY) * heap_table->len;
     memset(heap_table->entries, HEAP_MEMORY_BLOCK_FREE, table_size); // NOLINT
 
-    return KERNEL_OK;
+    return 0;
 }
 
 size_t size_to_nblocks(size_t size)
