@@ -39,7 +39,7 @@ int diskstream_read(struct disk_stream *stream, void *buffer, int len)
 
         const int remaining = len - read_so_far;
         const size_t to_copy = remaining < (DISK_SECTOR_SIZE - offset) ? remaining : (DISK_SECTOR_SIZE - offset);
-        memcpy(buffer + read_so_far, sector_buffer + offset, to_copy); // NOLINT
+        memcpy((char *)buffer + read_so_far, sector_buffer + offset, to_copy); // NOLINT
         read_so_far += to_copy;
         // there could be offset only for the first chunk read
         offset = 0;

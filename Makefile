@@ -12,18 +12,18 @@ LINKER_FILES = $(shell find src/ -name "*.ld")
 BOOT_FILES = src/boot/boot.asm src/boot/gdt.inc src/boot/ata_lba_read.inc
 INCLUDES = -Isrc
 
-CFLAGS = -ggdb3 -ffreestanding -nostdlib \
+CFLAGS = -ggdb3 -ffreestanding -nostdlib -m32\
 	-falign-jumps -falign-functions -falign-labels -falign-loops \
-	-fstrength-reduce -fomit-frame-pointer -finline-functions \
+	-fstrength-reduce -fno-omit-frame-pointer -finline-functions \
 	-std=gnu11 -O0 -Iinc \
-	-Wall -Wextra -Werror \
+	-Wall -Wextra -Werror -pedantic \
 	-Wno-unused-function -Wno-unused-label -Wno-cpp -Wno-unused-parameter
 
 CC = i686-elf-gcc
 LD = i686-elf-ld
 
 TARGET = bin/image.bin
-QEMU_RUN_COMMAND = qemu-system-i386 -d int,cpu_reset -hda $(TARGET)
+QEMU_RUN_COMMAND = qemu-system-i386 -d int,cpu_reset -no-reboot -no-shutdown  -hda $(TARGET)
 
 .phony: all folder run gdb clean user_programs autogen
 

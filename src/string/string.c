@@ -16,7 +16,7 @@ void *memset(void *s, int c, size_t n)
         qword_ptr[dword] = dword_value;
     }
 
-    char *byte_ptr = (char *)(s + dwords * 4);
+    char *byte_ptr = ((char *)s + dwords * 4);
     for (size_t i = 0; i < remining_bytes; ++i) {
         byte_ptr[i] = byte;
     }
@@ -39,7 +39,7 @@ void *memchr(const void *s, int c, size_t n)
 {
     for (size_t i = 0; i < n; ++i) {
         if (c == ((char *)s)[i]) {
-            return (void *)(s + i);
+            return (void *)((char *)s + i);
         }
     }
 

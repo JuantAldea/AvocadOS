@@ -13,7 +13,7 @@
 
 static int heap_validate_table(void *ptr, void *end, struct heap_table *table)
 {
-    const size_t table_size = (size_t)(end - ptr);
+    const size_t table_size = (size_t)((uintptr_t)end - (uintptr_t)ptr);
     const size_t total_blocks = table_size / KERNEL_HEAP_BLOCK_SIZE;
     if (table->len != total_blocks) {
         return -EINVAL;
@@ -100,32 +100,27 @@ void heap_reserve_blocks(struct heap *heap, size_t first_block, size_t n_blocks)
     BLOCK_SET_NO_NEXT(heap_entries[end_block - 1]);
 }
 
-void *heap_block_to_addr(const struct heap *const heap, size_t block_index)
+uintptr_t heap_block_to_addr(const struct heap *const heap, size_t block_index)
 {
-    return heap->base_addr + block_index * KERNEL_HEAP_BLOCK_SIZE;
+    return (uintptr_t)heap->base_addr + block_index * KERNEL_HEAP_BLOCK_SIZE;
 }
 
 size_t heap_addr_to_block(const struct heap *const heap, void *ptr)
 {
-    return (size_t)(ptr - heap->base_addr) / KERNEL_HEAP_BLOCK_SIZE;
+    return (size_t)((uintptr_t)ptr - (uintptr_t)heap->base_addr) / KERNEL_HEAP_BLOCK_SIZE;
 }
 
-void *heap_malloc_blocks(struct heap *heap, size_t n_blocks)
+uintptr_t heap_malloc_blocks(struct heap *heap, size_t n_blocks)
 {
     int first_block = find_first_block(heap, n_blocks);
 
     if (first_block < 0) {
-        return NULL;
+        return 0;
     }
 
     heap_reserve_blocks(heap, first_block, n_blocks);
-#ifdef COUNT_ALLOCATIONS
-    print("[HEAP] Reserved: ");
-    char buff[10];
-    itoa(n_blocks, buff);
-    print(buff);
-    print_char('\n');
-#endif
+
+    heap->table->in_use += n_blocks;
 
     return heap_block_to_addr(heap, first_block);
 }
@@ -139,7 +134,7 @@ void *heap_malloc(struct heap *heap, size_t size)
         return NULL;
     }
 
-    return heap_malloc_blocks(heap, n_blocks);
+    return (void *)heap_malloc_blocks(heap, n_blocks);
 }
 
 void heap_free(struct heap *heap, void *ptr)
@@ -155,24 +150,14 @@ void heap_free(struct heap *heap, void *ptr)
         //int?
         return;
     }
-#ifdef COUNT_FREES
-    size_t released_blocks = 1;
-#endif
+
     BLOCK_SET_FREE(heap_entries[block++]);
+    --heap->table->in_use;
     while (!BLOCK_TEST_FREE(heap_entries[block]) && !BLOCK_TEST_FIRST(heap_entries[block])) {
         BLOCK_SET_FREE(heap_entries[block]);
         ++block;
-#ifdef COUNT_FREES
-        ++released_blocks;
-#endif
+        --heap->table->in_use;
     }
-#ifdef COUNT_FREES
-    print("[HEAP] Released: ");
-    char buff[10];
-    itoa(released_blocks, buff);
-    print(buff);
-    print_char('\n');
-#endif
 }
 
 size_t count_used_blocks(struct heap *heap)

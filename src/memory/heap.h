@@ -7,8 +7,8 @@
 #define HEAP_MEMORY_BLOCK_FREE 0x0
 #define HEAP_MEMORY_BLOCK_TAKEN 0x1
 
-#define HEAP_MEMORY_BLOCK_HAS_NEXT 0b10000000
-#define HEAP_MEMORY_BLOCK_IS_FIRST 0b01000000
+#define HEAP_MEMORY_BLOCK_HAS_NEXT 128 // 0b10000000
+#define HEAP_MEMORY_BLOCK_IS_FIRST 64 //0b01000000
 
 #define BLOCK_TEST_FREE(b) (b == HEAP_MEMORY_BLOCK_FREE)
 #define BLOCK_TEST_TAKEN(b) (b & HEAP_MEMORY_BLOCK_TAKEN)
@@ -29,6 +29,7 @@ typedef uint8_t HEAP_TABLE_ENTRY;
 struct heap_table {
     HEAP_TABLE_ENTRY *entries;
     size_t len;
+    size_t in_use;
 };
 
 struct heap {

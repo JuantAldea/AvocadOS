@@ -1,3 +1,5 @@
+#ifdef MEMCHECK
+
 #include "memcheck.h"
 #include "kheap.h"
 #include "../config.h"
@@ -5,18 +7,23 @@
 #include "../kernel/panic.h"
 #include "../termio/termio.h"
 
-struct memcheck_entry *allocation_table;
+struct memcheck_entry allocation_table[KERNEL_HEAP_SIZE / KERNEL_HEAP_BLOCK_SIZE];
 size_t allocation_table_len;
 
-void memcheck_table_init(int size)
+void memcheck_table_init()
 {
-    allocation_table_len = size;
-    allocation_table = kzalloc(size * sizeof(struct memcheck_entry));
-    memcheck_allocate(allocation_table, size * sizeof(struct memcheck_entry), __FILE__, __FUNCTION__, __LINE__);
+    //allocation_table_len = size;
+    //allocation_table = kzalloc(size * sizeof(struct memcheck_entry));
+    //memcheck_allocate(allocation_table, allocation_table_len * sizeof(struct memcheck_entry), __FILE__, __FUNCTION__, __LINE__);
+    allocation_table_len = KERNEL_HEAP_SIZE / KERNEL_HEAP_BLOCK_SIZE;
 }
 
 void memcheck_allocate(void *ptr, size_t size, const char *const filename, const char *const function, int line)
 {
+    if (ptr < kernel_heap.base_addr || ptr >= kernel_heap.base_addr + KERNEL_HEAP_SIZE) {
+        panic("WRONG POINTER: Too low or too high");
+    }
+
     const size_t block = kheap_addr_to_block(ptr);
     allocation_table[block].blocks = (size + KERNEL_HEAP_BLOCK_SIZE - 1) / KERNEL_HEAP_BLOCK_SIZE;
     allocation_table[block].line = line;
@@ -63,3 +70,10 @@ void memcheck_check(char *skip)
         print_char('\n');
     }
 }
+#else
+
+void nothing()
+{
+}
+
+#endif

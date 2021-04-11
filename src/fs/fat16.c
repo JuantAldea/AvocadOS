@@ -441,7 +441,7 @@ size_t __fat16_read(struct fat_descriptor_t *descriptor, void *ptr, size_t len)
         }
 
         read += chunk_read;
-        ptr += chunk_read;
+        ptr = (char *)ptr + chunk_read;
     }
 
     return read;

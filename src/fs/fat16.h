@@ -30,8 +30,7 @@ typedef uint8_t FAT_ENTRY_TYPE;
 #define FAT16_CLUSTER_CHAIN_END_END 0xFFFF
 
 extern struct filesystem_operations_t fat16_operations;
-
-enum fopen_mode;
+#include "file.h"
 struct file_descriptor_t;
 struct path_part;
 struct disk_t;
