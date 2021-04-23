@@ -17,7 +17,7 @@ struct general_purpose_registers {
     uint32_t eax;
 } __attribute__((packed));
 
-#define ISR_FRAME_COMMON \
+#define INTERRUPT_FRAME_COMMON \
     /* pushed by isr_wrapper */ \
     uintptr_t gs; \
     uintptr_t fs; \
@@ -32,19 +32,19 @@ struct general_purpose_registers {
     uint32_t eflags;
 
 /*
-interrupt_frame_kernel and interrupt_frame are compatible so we will
+interrupt_frame_kernel and interrupt_frame are compatible so we will use
 struct interrupt_frame as generic type and access esp and ss carefully
 */
 
 struct interrupt_frame {
-    ISR_FRAME_COMMON
+    INTERRUPT_FRAME_COMMON
     /* pushed automatically when switching from user to kernel */
     uint32_t esp;
     uint32_t ss;
 } __attribute__((packed));
 
 struct interrupt_frame_kernel {
-    ISR_FRAME_COMMON
+    INTERRUPT_FRAME_COMMON
 } __attribute__((packed));
 
 #endif
