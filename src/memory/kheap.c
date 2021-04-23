@@ -30,8 +30,10 @@ void *early_kzalloc(size_t len)
 }
 */
 
-void kheap_init(uintptr_t addr)
+void kheap_init()
 {
+    extern void *_kernel_end;
+    uintptr_t addr = (uintptr_t)&_kernel_end;
     uintptr_t table_ptr_begin = (addr & 0xFFF) ? (addr & ~0xFFF) + 0x1000 : addr;
     kheap_table.entries = (HEAP_TABLE_ENTRY *)table_ptr_begin;
     kheap_table.len = KERNEL_HEAP_SIZE / KERNEL_HEAP_BLOCK_SIZE;

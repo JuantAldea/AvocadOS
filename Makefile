@@ -23,7 +23,7 @@ CC = i686-elf-gcc
 LD = i686-elf-ld
 
 TARGET = bin/image.bin
-QEMU_RUN_COMMAND = qemu-system-i386 -d int,cpu_reset -no-reboot -no-shutdown  -hda $(TARGET)
+QEMU_RUN_COMMAND = qemu-system-i386 -d int,cpu_reset,guest_errors -no-reboot -no-shutdown  -hda $(TARGET)
 
 .phony: all folder run gdb clean user_programs autogen
 
@@ -119,6 +119,8 @@ gdb: all
 	-ex "add-symbol-file build/kernel/kernel.elf 0xc0100000 " \
 	-ex "target remote | $(QEMU_RUN_COMMAND) -S -gdb stdio" \
 	-ex "break kernel_main"
+
+
 
 clean: programs_clean
 	rm -rf bin/*

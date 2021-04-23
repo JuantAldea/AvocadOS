@@ -17,7 +17,7 @@ SECTIONS
     . = __KERNEL_32_LOAD_ADDRESS__;
 
     /* can be used to determine kernel's size */
-    _kernel_start = .;
+
 
     /*
         kernel will be stored from __KERNEL_32_LOAD_ADDRESS__,
@@ -26,7 +26,7 @@ SECTIONS
     */
 
     . += __KERNEL_VIRTUAL_ADDRESS_BASE__;
-
+    _kernel_start = .;
     .text : AT (ADDR (.text) - __KERNEL_VIRTUAL_ADDRESS_BASE__)
     {
         build/kernel/kernel.asm.o(.text);

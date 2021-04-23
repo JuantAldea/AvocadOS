@@ -9,75 +9,84 @@
 #include "../kernel/kernel.h"
 #include "../kernel/task/process.h"
 #include "../kernel/panic.h"
+#include "../kernel/task/task.h"
 
+extern union task *current_task;
 struct idt_desc idt_descriptors[KERNEL_TOTAL_INTERRUPTS];
 struct idtr_desc idtr_descriptor;
 
-typedef void *(*isr_handler)(struct isr_data *data);
+typedef void *(*isr_handler)(struct interrupt_frame *interrupt_frame);
 isr_handler isr_handlers[KERNEL_TOTAL_INTERRUPTS];
 
-void *isr_0x0_handler(struct isr_data *data)
+void *isr_0x0_handler(struct interrupt_frame *interrupt_frame)
 {
-    (void)data;
+    (void)interrupt_frame;
     print("DIV0\n");
     outb(0x20, 0x20);
-    return data;
+    return interrupt_frame;
 }
 
-void *isr_0x1_handler(struct isr_data *data)
+void *isr_0x1_handler(struct interrupt_frame *interrupt_frame)
 {
-    (void)data;
+    (void)interrupt_frame;
 
     print("ISR1\n");
     outb(0x20, 0x20);
-    return data;
+    return interrupt_frame;
 }
 
-void *isr_0xE_handler(struct isr_data *data)
+void *isr_0xE_handler(struct interrupt_frame *interrupt_frame)
 {
-    (void)data;
+    (void)interrupt_frame;
     panic("Int 0xE - Page Fault\n");
     outb(0x20, 0x20);
-    return data;
+    return interrupt_frame;
 }
 
-void *int_0x21_handler(struct isr_data *data)
+void *int_0x21_handler(struct interrupt_frame *interrupt_frame)
 {
-    (void)data;
+    (void)interrupt_frame;
     print("Int 0x21 - Keyboard\n");
     //ACK
     outb(0x20, 0x20);
-    return data;
+    return interrupt_frame;
 }
 
-void *int_0x20_handler(struct isr_data *data)
+void *int_0x20_handler(struct interrupt_frame *interrupt_frame)
 {
-    (void)data;
-    print("Int 0x20 - Timer interrupt\n");
+    //print("Int 0x20 - Timer interrupt\n");
     //ACK
     outb(0x20, 0x20);
-    return data;
+    //task_store(data);
+    schedule(interrupt_frame);
+    return (void *)current_task->task.kernel_stack_pointer;
+    //return data;
 }
 
-void *no_int_handler(struct isr_data *data)
+void *int_0xD_handler(struct interrupt_frame *interrupt_frame)
 {
-    (void)data;
+    panic("GPF");
+    outb(0x20, 0x20);
+    return NULL;
+}
+
+
+void *no_int_handler(struct interrupt_frame *interrupt_frame)
+{
+    (void)interrupt_frame;
     outb(0x20, 0x0B);
     uint8_t in_service = insb(0x20);
     (void)in_service;
-    print("No Int handler\n");
+    char buffer[20] = { 0 };
+    itoa(interrupt_frame->int_no, buffer);
+    print("No Int handler -> ");
+    print(buffer);
+    print(" \n");
     outb(0x20, 0x20);
-    return data;
+    return interrupt_frame;
 }
 
-void enter_kernel()
-{
-    extern void load_kernel_segments();
-    load_kernel_segments();
-    paging_switch_directory(&kernel_page_directory);
-}
-
-void *isr_dispatcher(struct isr_data *data)
+void *isr_dispatcher(struct interrupt_frame *interrupt_frame)
 {
     //enter_kernel();
 
@@ -85,36 +94,10 @@ void *isr_dispatcher(struct isr_data *data)
     uint8_t in_service = insb(0x20);
     (void)in_service;
 
-    isr_handlers[data->int_no](data);
-
-    /*
-    switch (data->int_no) {
-    case 0x0:
-        isr_0x0_handler();
-        break;
-    case 0x1:
-        isr_0x1_handler();
-        break;
-    case 0xE:
-        isr_0xE_handler();
-        break;
-    case 0x20:
-        int_0x20_handler();
-        break;
-    case 0x21:
-        int_0x21_handler();
-        break;
-    default:
-        no_int_handler(data->int_no);
-        break;
-    }*/
-
-    //enter_user();
-    //outb(0x20, 0x20);
-    return data;
+    return isr_handlers[interrupt_frame->int_no](interrupt_frame);
 }
 
-void idt_set(int int_number, void *addr)
+void idt_set(int int_number, void (*addr)())
 {
     struct idt_desc *desc = &(idt_descriptors[int_number]);
     desc->offset_1 = (uintptr_t)addr & 0x0000ffff;
@@ -142,6 +125,7 @@ void idt_init()
     extern void isr_0x1();
     extern void isr_0x21();
     extern void isr_0xE();
+    extern void isr_0xD();
     extern void isr_0x20();
 
     for (int i = 0; i < KERNEL_TOTAL_INTERRUPTS; ++i) {
@@ -153,6 +137,7 @@ void idt_init()
     idt_set(0x20, isr_0x20);
     idt_set(0x21, isr_0x21);
     idt_set(0xE, isr_0xE);
+    idt_set(0xD, isr_0xD);
 
     for (int i = 0; i < KERNEL_TOTAL_INTERRUPTS; i++) {
         isr_handlers[i] = no_int_handler;
@@ -163,6 +148,7 @@ void idt_init()
     isr_handlers[0xE] = isr_0xE_handler;
     isr_handlers[0x20] = int_0x20_handler;
     isr_handlers[0x21] = int_0x21_handler;
+    isr_handlers[0xD] = int_0xD_handler;
 
     // Load IDT table
     extern void idt_load(struct idtr_desc * ptr);

@@ -4,20 +4,8 @@
 #include "../../cpu.h"
 #include "../../idt/idt.h"
 #include "../../memory/paging.h"
-
-struct process;
-struct task_control_block {
-    //struct process_state registers;
-    struct process *process;
-    void *esp0;
-    union task *next;
-    union task *previous;
-};
-
-union task {
-    struct task_control_block task;
-    uint32_t kstack[PAGING_PAGE_SIZE / sizeof(uint32_t)];
-};
+#include "../../config.h"
+#include "process.h"
 
 #define next_task(t) ((t)->next)
 
@@ -25,20 +13,24 @@ union task {
 
 union task *task_init_idle_task(struct process *process);
 
-union task *task_new(struct process *process, int privileged);
+extern union task *current_task;
+
+union task *task_new(struct process *process, int privileged, uintptr_t entry_point, uintptr_t esp);
 void task_free(union task *task);
 void print_tasks();
 //int switch_task(union task *task);
 void task_schedule_next();
 
 int task_switch_to_task_page_directory();
-extern void task_continue(struct isr_data *isr_data);
-extern void restore_general_puporse_registers(struct isr_data *isr_data);
+extern void task_continue(struct interrupt_frame *interrupt_frame);
+extern void restore_general_puporse_registers(struct interrupt_frame *interrupt_frame);
 void enter_user();
 
-void task_save_current_task(struct isr_data *isr_data);
+void task_save_current_task(struct interrupt_frame *interrupt_frame);
 
-void schedule(void);
-void task_store(struct isr_data *isr_data);
+uintptr_t schedule(struct interrupt_frame *interrupt_frame);
+void task_store(union task *task, struct interrupt_frame *interrupt_frame);
+void task_push_data_to_kstack(union task *task, void *data, size_t size);
+void task_push_state_to_kstack(union task *task);
 
 #endif

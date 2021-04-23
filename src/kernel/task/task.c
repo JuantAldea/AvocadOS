@@ -5,14 +5,16 @@
 #include "../../status.h"
 #include "../../config.h"
 #include "../../kernel/panic.h"
+#include "../gdt.h"
+#include "../../termio/termio.h"
 
 #define PREVIOUS_TASK(task_ptr_ptr) *(task_ptr_ptr - offsetof(struct task, next))
-extern void process_switch_directory(struct process *process);
 
-union task idle_task;
-static union task *current_task;
+//extern void process_switch_directory(struct process *process);
 
-static int __task_init(union task *task, struct process *process, int privileged);
+union task *current_task;
+
+//static int _task_init(union task *task, struct process *process, int privileged);
 
 union task *task_current()
 {
@@ -48,7 +50,7 @@ union task *task_list_remove(union task *task)
     return task;
 }
 
-union task *task_new(struct process *process, int privileged)
+union task *task_new(struct process *process, int privileged, uintptr_t entry_point, uintptr_t esp)
 {
     int res = 0;
     union task *task = kzalloc(sizeof(*task));
@@ -57,10 +59,43 @@ union task *task_new(struct process *process, int privileged)
         goto out;
     }
 
-    __task_init(task, process, privileged);
+    const uintptr_t cs = privileged ? GDT_KERNEL_CODE_SEGMENT_SELECTOR : (GDT_USER_CODE_SEGMENT_SELECTOR | 0x3);
+    const uintptr_t ss = privileged ? GDT_KERNEL_DATA_SEGMENT_SELECTOR : (GDT_USER_DATA_SEGMENT_SELECTOR | 0x3);
+
+    *task = (union task) {
+        .task = {
+            .registers.eip = entry_point,
+            .registers.general_regs = {
+                .edi = 0,
+                .esi = 0,
+                .ebp = 0,
+                .esp = esp,
+                .ebx = 0,
+                .edx = 0,
+                .ecx = 0,
+                .eax = 0xDEADC0DE,
+            },
+            .registers.eflags = 0x202,
+            .registers.segments = {
+                .gs = ss,
+                .fs = ss,
+                .es = ss,
+                .ds = ss,
+                .ss = ss,
+                .cs = cs,
+            },
+            .kernel_stack_pointer = (uintptr_t)&task->kstack[TASK_KERNEL_STACK_SIZE],
+            .next = NULL,
+            .previous = NULL,
+            .process = process,
+        },
+    };
+
+    task_push_state_to_kstack(task);
+
     task_list_insert(task);
 out:
-    return res ? task : NULL;
+    return !res ? task : NULL;
 }
 
 void task_free(union task *task)
@@ -68,134 +103,110 @@ void task_free(union task *task)
     (void)task;
 }
 
-union task *task_init_idle_task(struct process *process)
+void task_push_data_to_kstack(union task *task, void *data, size_t size)
 {
-    __task_init(&idle_task, process, 0);
-    idle_task.task.next = &idle_task;
-    idle_task.task.previous = &idle_task;
-    current_task = &idle_task;
-    return &idle_task;
+    task->task.kernel_stack_pointer -= size;
+    memcpy((void *)task->task.kernel_stack_pointer, data, size); //NOLINT
 }
 
-static int __task_init(union task *task, struct process *process, int privileged)
+void task_push_state_to_kstack(union task *task)
 {
-    memset(task, 0, sizeof(*task)); //NOLINT
+    const int user_mode = task->task.registers.segments.cs & 0x3;
+    const size_t interrupt_frame_size = user_mode ? sizeof(struct interrupt_frame) : sizeof(struct interrupt_frame_kernel);
 
-
-    struct isr_data *frame = (void *)(task->kstack - sizeof(struct isr_data) - 1);
-
-    frame->int_no = 0;
-    frame->err_code = 0;
-    frame->regs = (struct general_purpose_registers){ 0 };
-
-    uint32_t cs = privileged ? GDT_KERNEL_CODE_SEGMENT_SELECTOR : GDT_USER_CODE_SEGMENT_SELECTOR | 0x3;
-    uint32_t ds = privileged ? GDT_KERNEL_DATA_SEGMENT_SELECTOR : GDT_USER_DATA_SEGMENT_SELECTOR | 0x3;
-
-    frame->gs = ds;
-    frame->ds = ds;
-    frame->fs = ds;
-    frame->es = ds;
-
-    frame->isr_frame = (struct isr_frame){
-        .ss = ds,
-        .cs = cs,
-        .eip = PROGRAM_BASE_VIRT_ADDR,
-        .esp = PROGRAM_STACK_BASE_VIRT_ADDR,
-        .eflags = 0x200,
+    struct interrupt_frame interrupt_frame = {
+        .gs = task->task.registers.segments.gs,
+        .fs = task->task.registers.segments.fs,
+        .es = task->task.registers.segments.es,
+        .ds = task->task.registers.segments.ds,
+        .general_regs = task->task.registers.general_regs,
+        .int_no = 0xDEADC0DE,
+        .error_code = 0xDEADC0DE,
+        .eip = task->task.registers.eip,
+        .cs = task->task.registers.segments.cs,
+        .eflags = task->task.registers.eflags,
+        // won't be pushed if there's no context switch
+        .esp = task->task.registers.general_regs.esp,
+        .ss = task->task.registers.segments.ss,
     };
 
-    task->task.process = process;
-    return 0;
+    task_push_data_to_kstack(task, &interrupt_frame, interrupt_frame_size);
 }
 
-/*
-void task_save_current_task(struct isr_data *isr_data)
+void switch_task(union task *previous, union task *next)
 {
-    current_task->registers = (struct process_state){
-        .eflags = isr_data->isr_frame.eflags,
-        .eip = isr_data->isr_frame.eip,
-        .segments =
-                (struct segment_registers){
-                        .cs = isr_data->isr_frame.cs,
-                        .ss = isr_data->isr_frame.ss,
-                        .gs = isr_data->gs,
-                        .fs = isr_data->fs,
-                        .es = isr_data->es,
-                        .ds = isr_data->ds,
+    (void)next;
+    (void)previous;
+    //asm volatile("cli");
 
-                },
-        .regs =
-                (struct general_purpose_registers){
-                        .esp = isr_data->isr_frame.esp,
-                        .esi = isr_data->regs.esi,
-                        .ebp = isr_data->regs.ebp,
-                        .ebx = isr_data->regs.ebx,
-                        .edx = isr_data->regs.edx,
-                        .ecx = isr_data->regs.ecx,
-                        .eax = isr_data->regs.eax,
-                },
-    };
-}
-*/
+    asm volatile("mov %0, %%cr3" ::"r"(PAGE_ENTRY_ADDR(next->task.process->page_directory->directory[1023])));
 
-void task_store(struct isr_data *isr_data)
-{
-    current_task->task.esp0 = isr_data;
+    uintptr_t page_directory_addr;
+    asm volatile("mov %%cr3, %0" : "=r"(page_directory_addr));
+    asm volatile("mov %0, %%cr3" : : "r"(page_directory_addr));
+
+    tss_set_kernel_stack((uintptr_t)&next->kstack[TASK_KERNEL_STACK_SIZE]);
+    tss_load(GDT_TSS_SEGMENT_SELECTOR);
+    current_process = next->task.process;
+    current_task = next;
 }
 
-#include "tss.h"
-#include "../gdt.h"
-
-void task_restore()
+void task_store(union task *task, struct interrupt_frame *interrupt_frame)
 {
-    //process_switch_directory(current_task->process);
-    tss.esp0 = (uintptr_t)current_task->task.esp0;
-    tss_load(sizeof(struct gdt_native) * 5);
-    //task_continue((struct isr_data *)current_task->esp0);
-}
-
-void enter_user()
-{
-    extern void load_user_segments();
-    load_user_segments();
-    process_switch_directory(current_task->task.process);
-}
-/*
-void task_place_isr_frame_on_stack(union task *task, struct isr_data *isr_data)
-{
-    (*task->process->) = (struct isr_data){
-        .gs = task->registers.segments.gs,
-        .fs = task->registers.segments.fs,
-        .es = task->registers.segments.es,
-        .ds = task->registers.segments.ds,
-        .regs =
-                (struct general_purpose_registers){
-                        .eax = task->registers.regs.eax,
-                        .ebp = task->registers.regs.ebp,
-                        .ebx = task->registers.regs.ebx,
-                        .ecx = task->registers.regs.ecx,
-                        .edi = task->registers.regs.edi,
-                        .edx = task->registers.regs.edx,
-                        .esi = task->registers.regs.edi,
-                        .esp = task->registers.regs.esp,
-                },
-        .int_no = 0,
-        .err_code = 0,
-        .isr_frame =
-                (struct isr_frame){
-                        .cs = task->registers.segments.cs,
-                        .eflags = task->registers.eflags,
-                        .eip = task->registers.eip,
-                        .esp = task->registers.regs.esp,
-                        .ss = task->registers.segments.ss,
-                },
-    };
-}
-*/
-void schedule(void)
-{
-    union task *next = task_next();
-    if (next != current_task) {
-        //switch_task(next);
+    if (!current_task) {
+        panic("NO CURRENT TASK!");
     }
+
+    task->task.kernel_stack_pointer = (uintptr_t)interrupt_frame;
+
+    if (interrupt_frame->cs & 0x3) {
+        //context change
+        task->task.registers.segments.ss = interrupt_frame->ss;
+        task->task.registers.general_regs.esp = interrupt_frame->esp;
+    }
+
+    task->task.registers.eflags = interrupt_frame->eflags;
+    task->task.registers.general_regs = interrupt_frame->general_regs;
+    task->task.registers.eip = interrupt_frame->eip;
+    task->task.registers.segments.cs = interrupt_frame->cs;
+    task->task.registers.segments.gs = interrupt_frame->gs;
+    task->task.registers.segments.fs = interrupt_frame->fs;
+    task->task.registers.segments.es = interrupt_frame->es;
+    task->task.registers.segments.ds = interrupt_frame->ds;
 }
+
+uintptr_t schedule(struct interrupt_frame *interrupt_frame)
+{
+    if (!current_task) {
+        return (uintptr_t)interrupt_frame;
+    }
+
+    task_store(current_task, interrupt_frame);
+
+    union task *next = task_next();
+
+    /*
+    if (next == current_task) {
+        return;
+    }
+    */
+    print(current_task->task.process->name);
+    print(" -> ");
+    print(next->task.process->name);
+    print_char('\n');
+
+    switch_task(current_task, next);
+
+    return current_task->task.kernel_stack_pointer;
+}
+
+/*
+break task.c:198
+commands
+silent
+printf "%x, %x\n", current_task, next
+p/x current_task->task
+p/x next->task
+cont
+end
+*/

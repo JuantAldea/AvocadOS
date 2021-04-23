@@ -58,7 +58,7 @@ extern isr_dispatcher
 isr_wrapper:
     ; pushed so far
     ; by cpu:
-    ;   ss, esp, eflags, cs, eip
+    ;   (ss, esp,) eflags, cs, eip
     ; by us:
     ;   errcode, isr number
 
@@ -78,14 +78,13 @@ isr_wrapper:
     push es
     push fs
     push gs
-    ; cs is pushed by the CPU
 
-    ; switch to kernel segments
-
+    ; isr frame on the stack, push its pointer to isr_dispatcher
     push esp
 
     call isr_dispatcher
-    add esp, 4
+    mov esp, eax
+    ;add esp, 4
 
     ; restore segments
     pop gs
@@ -95,9 +94,9 @@ isr_wrapper:
 
     ; restore registers
     popad  ; Pops pushad
-    add esp, 8     ; Cleans up the pushed error code and pushed ISR number
-    sti
-    iret           ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP
+    add esp, 8     ; Cleans up the pushed error code and ISR number
+    ;sti
+    iret           ; pops 3(5) things at once: CS, EIP, EFLAGS, (SS, and ESP)
 
 GENERATE_ISR_NO_ERROR_CODE_ROUTINES 0x0
 GENERATE_ISR_NO_ERROR_CODE_ROUTINES 0x1
@@ -107,6 +106,7 @@ GENERATE_ISR_NO_ERROR_CODE_ROUTINES 0x4
 GENERATE_ISR_NO_ERROR_CODE_ROUTINES 0x20
 GENERATE_ISR_NO_ERROR_CODE_ROUTINES 0x21
 GENERATE_ISR_ERROR_CODE_ROUTINES 0xE
+GENERATE_ISR_ERROR_CODE_ROUTINES 0xD
 
 [GLOBAL no_interrupt]
 [EXTERN no_int_handler]
@@ -126,12 +126,4 @@ enable_interrupts:
 [GLOBAL disable_interrupts]
 disable_interrupts:
     cli
-    ret
-
-load_kernel_segments:
-    mov ax, GDT_KERNEL_DATA_SEGMENT_SELECTOR  ; load the kernel data segment descriptor
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
     ret

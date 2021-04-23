@@ -12,12 +12,11 @@
 #include "../config.h"
 #include "../fs/file.h"
 #include "gdt.h"
-#include "task/tss.h"
 #include "task/task.h"
 #include "task/process.h"
 #include "panic.h"
 
-extern void *_kernel_end;
+//extern void *_kernel_start;
 
 void kernel_splash()
 {
@@ -51,25 +50,24 @@ void __attribute__((noreturn)) kernel_main()
 {
     terminal_init();
 
-    kheap_init(&_kernel_end);
-    paging_init(KERNEL_HEAP_SIZE);
+    kheap_init();
+
+    paging_init();
+
+    terminal_init();
 
     kernel_splash();
 
-    gdt_segments_init_and_load();
-
-    //print("Init kheap\n");
-
+    gdt_init();
     idt_init();
-    //print("Setup interrupts\n");
-
-    tss.esp0 = 0x600000;
-    tss.ss0 = GDT_KERNEL_DATA_SEGMENT_SELECTOR;
-    tss_load(sizeof(struct gdt_native) * 5);
 
     file_table_init();
     fs_init();
     disk_init();
+    tasking_init();
+
+    enable_interrupts();
+
     print("\n\nContents of ");
     char path[] = "0:/MOTD.TXT";
     print(path);
@@ -94,27 +92,14 @@ void __attribute__((noreturn)) kernel_main()
     terminal_init();
     print_char('\n');
     print(buffer);
-    enable_interrupts();
-
+    //char buffer2[65536] = { 0 };
+    //(void) buffer2;
     /*
-    //kernel_page_directory = paging_init_4gb_directory(PAGING_WRITABLE_PAGE | PAGING_PRESENT | PAGING_ACCESS_FROM_ALL);
-    //paging_switch_directory(kernel_page_directory);
-
-    //enable_paging();
-
-    //task_init_initial_task();
-
     //print_tasks();
 
     //print("Enabled paging\n");
 
     //print("Init volume: ");
-
-    file_table_init();
-    fs_init();
-    disk_init();
-    //init_idle_process();
-    //enable_interrupts();
     //print("Enabled interrupts\n");
     print("\n\nContents of ");
     char path[] = "0:/MOTD.TXT";
@@ -142,7 +127,7 @@ void __attribute__((noreturn)) kernel_main()
 
     char buffer2[65536] = { 0 };
 
-    int read2 = fread(buffer2, 1, sizeof(buffer2), des2);
+    int read2 = fread(buffer2, 1, sizeof(buffer2), des2)
     if (read2 < 0) {
         panic("Error reading file\n");
     }
@@ -166,5 +151,16 @@ void __attribute__((noreturn)) kernel_main()
 
     print("\n\nDone, for now\n");
 end:
+/*
+    print_char('\n');
+    for (int i = 0; i < 5; i++) {
+        itoa(i, buffer);
+        print("System - ");
+        print(buffer);
+        print("                         \n");
+    }
+    */
+    asm volatile("hlt");
+
     goto end;
 }

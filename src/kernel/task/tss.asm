@@ -1,3 +1,5 @@
+%include "build/asm_constants.inc"
+
 section .text
 global tss_load:function
 tss_load:

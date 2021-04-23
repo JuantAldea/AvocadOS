@@ -35,10 +35,10 @@ task_continue:
     mov ebx, [ebp + 4]
 
     ; stack selector
-    push dword [ebx + isr_data_isr_frame + isr_frame_ss]
+    push dword [ebx + interrupt_frame_ss]
 
     ; stack pointer
-    push dword [ebx + isr_data_isr_frame + isr_frame_esp]
+    push dword [ebx + interrupt_frame_esp]
 
     ; push flags enabling interrupts
     pushf
@@ -47,20 +47,20 @@ task_continue:
     push eax
 
     ; code segment
-    push dword [ebx + isr_data_isr_frame + isr_frame_cs]
+    push dword [ebx + interrupt_frame_cs]
 
     ; push eip
-    push dword [ebx + isr_data_isr_frame + isr_frame_eip]
+    push dword [ebx + interrupt_frame_eip]
 
     ; segment registers
-    mov ax, [ebx + isr_data_isr_frame + isr_frame_ss]
+    mov ax, [ebx + interrupt_frame_ss]
     mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
 
-    ; pass parameter data->isr_data_regs
-    push dword [ebp + 4 + isr_data_regs]
+    ; pass parameter data->interrupt_frame_general_regs
+    push dword [ebp + 4 + interrupt_frame_general_regs]
     call restore_general_registers
 
     ; remove previous push

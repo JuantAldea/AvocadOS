@@ -1,8 +1,7 @@
 [BITS 32]
-section .text
-[GLOBAL paging_load_directory]
-[GLOBAL enable_paging]
+[SECTION .text]
 
+[GLOBAL paging_load_directory:function]
 paging_load_directory:
     push ebp
     mov ebp, esp
@@ -14,6 +13,8 @@ paging_load_directory:
     pop ebp
     ret
 
+%if 0
+[GLOBAL enable_paging:function]
 enable_paging:
     push ebp
     mov ebp, esp
@@ -30,3 +31,4 @@ enable_paging:
     mov esp, ebp
     pop ebp
     ret
+%endif
