@@ -17,6 +17,7 @@ struct general_purpose_registers {
     uint32_t eax;
 } __attribute__((packed));
 
+// clang-format off
 #define INTERRUPT_FRAME_COMMON \
     /* pushed by isr_wrapper */ \
     uintptr_t gs; \
@@ -30,6 +31,7 @@ struct general_purpose_registers {
     uint32_t eip; \
     uint32_t cs; \
     uint32_t eflags;
+// clang-format on
 
 /*
 interrupt_frame_kernel and interrupt_frame are compatible so we will use
