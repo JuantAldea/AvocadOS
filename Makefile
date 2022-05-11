@@ -16,7 +16,7 @@ CFLAGS = -ggdb3 -ffreestanding -nostdlib -m32\
 	-falign-jumps -falign-functions -falign-labels -falign-loops \
 	-fstrength-reduce -fno-omit-frame-pointer -finline-functions \
 	-std=gnu11 -O0 -Iinc \
-	-Wall -Wextra -Werror -pedantic \
+	-Wall -Wextra -Werror \
 	-Wno-unused-function -Wno-unused-label -Wno-cpp -Wno-unused-parameter
 
 CC = i686-elf-gcc
