@@ -25,7 +25,9 @@ LD = i686-elf-ld
 TARGET = bin/image.bin
 QEMU_RUN_COMMAND = qemu-system-i386 -d int,cpu_reset,guest_errors -no-reboot -no-shutdown  -hda $(TARGET)
 
-.phony: all folder run gdb clean user_programs autogen
+BOCHS_RUN_COMMAND = bochs -f bochsrc.txt -q
+
+.phony: all folder run gdb clean user_programs autogen run_bochs run_qemu
 
 all: autogen user_programs $(TARGET)
 
@@ -107,9 +109,15 @@ programs_clean:
 	cd programs/ && $(MAKE) clean
 ##########################################
 ##########################################
+run: run_bochs
 
-run: all
+run_qemu: all
 	$(QEMU_RUN_COMMAND)
+
+run_bochs: all
+	rm -f $(TARGET).lock
+	$(BOCHS_RUN_COMMAND)
+
 
 gdb: all
 	gdb -tui \
