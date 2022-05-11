@@ -2,6 +2,8 @@
 #define __KERNEL_H__
 
 void kernel_main(void);
+void remap_master_pic_C(void);
+
 extern struct page_directory_handle kernel_page_directory;
 
 #define ERROR(v) (void *)(v)

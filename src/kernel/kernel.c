@@ -17,6 +17,37 @@
 #include "panic.h"
 
 //extern void *_kernel_start;
+void remap_master_pic_C(void)
+{
+    // https://pdos.csail.mit.edu/6.828/2018/readings/hardware/8259A.pdf
+    // https://wiki.osdev.org/PIC#Protected_Mode
+
+    //ICW1
+    outb(0x20, 0x11);
+    io_delay();
+    outb(0xA0, 0x11);
+    io_delay();
+
+    //ICW2
+    outb(0x21, 0x20);
+    io_delay();
+    outb(0xA1, 0x28);
+    io_delay();
+
+    //ICW3
+    outb(0x21, 0x4);
+    io_delay();
+    outb(0xA1, 0x2);
+    io_delay();
+
+    //ICW4
+    outb(0x21, 0x1);
+    io_delay();
+    outb(0xA1, 0x1);
+    io_delay();
+
+    return;
+}
 
 void kernel_splash()
 {
@@ -48,6 +79,7 @@ void print_path(struct path_root *path)
 
 void __attribute__((noreturn)) kernel_main()
 {
+    remap_master_pic_C();
     terminal_init();
 
     kheap_init();
@@ -151,7 +183,7 @@ void __attribute__((noreturn)) kernel_main()
 
     print("\n\nDone, for now\n");
 end:
-/*
+    /*
     print_char('\n');
     for (int i = 0; i < 5; i++) {
         itoa(i, buffer);

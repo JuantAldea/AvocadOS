@@ -1,10 +1,11 @@
 [BITS 32]
 section .text
 
-global insb
-global insw
-global outb
-global outw
+global insb:function
+global insw:function
+global outb:function
+global outw:function
+global io_delay:function
 
 insb:
     ;create stack frame
@@ -61,3 +62,11 @@ outw:
     mov esp, ebp
     pop ebp
     ret
+
+
+io_delay:
+	nop
+	nop
+	nop
+	nop
+	ret
