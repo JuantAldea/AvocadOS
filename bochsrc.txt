@@ -1,0 +1,12 @@
+megs:            32
+display_library: x, options="gui_debug"
+romimage:        file=/usr/share/bochs/BIOS-bochs-latest
+vgaromimage:     file=/usr/share/bochs/VGABIOS-lgpl-latest
+boot:            disk
+ata0-master:     type=disk, mode=flat, path="bin/image.bin"
+log:             bochslog.txt
+clock:           sync=realtime, time0=local
+cpu:             count=1, ips=1000000
+#gdbstub: enabled=1, port=1234, text_base=0, data_base=0, bss_base=0
+magic_break: enabled=1
+port_e9_hack: enabled=1
