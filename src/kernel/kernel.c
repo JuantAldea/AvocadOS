@@ -23,27 +23,34 @@ void remap_master_pic_C(void)
     // https://wiki.osdev.org/PIC#Protected_Mode
 
     //ICW1
-    outb(0x20, 0x11);
+    outb(PIC1_CMD_PORT, PIC_ICW1_INIT | PIC_ICW1_ICW4);
     io_delay();
-    outb(0xA0, 0x11);
+    outb(PIC2_CMD_PORT, PIC_ICW1_INIT | PIC_ICW1_ICW4);
     io_delay();
 
     //ICW2
-    outb(0x21, 0x20);
+    /*
+        A common choice is to move them to the beginning of the available range
+        (IRQs 0..0xF -> INT 0x20..0x2F).
+        For that, we need to set the master PIC's
+        base for PIC1 ->0x20
+        base for PIC1 ->0x28
+    */
+    outb(PIC1_DATA_PORT, 0x20);
     io_delay();
-    outb(0xA1, 0x28);
+    outb(PIC2_DATA_PORT, 0x28);
     io_delay();
 
     //ICW3
-    outb(0x21, 0x4);
+    outb(PIC1_DATA_PORT, PIC_ICW3_SLAVE_AT_IRQ2);
     io_delay();
-    outb(0xA1, 0x2);
+    outb(PIC2_DATA_PORT, PIC_ICW3_SLAVE_ID);
     io_delay();
 
     //ICW4
-    outb(0x21, 0x1);
+    outb(PIC1_DATA_PORT, PIC_ICW4_8086_MODE);
     io_delay();
-    outb(0xA1, 0x1);
+    outb(PIC2_DATA_PORT, PIC_ICW4_8086_MODE);
     io_delay();
 
     return;
