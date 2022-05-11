@@ -12,9 +12,9 @@
 #include "../config.h"
 #include "../fs/file.h"
 #include "gdt.h"
-#include "task/tss.h"
-#include "task/task.h"
-#include "task/process.h"
+//#include "task/tss.h"
+//#include "task/task.h"
+//#include "task/process.h"
 #include "panic.h"
 
 extern void *_kernel_end;
@@ -56,10 +56,7 @@ void __attribute__((noreturn)) kernel_main()
 
     kernel_splash();
 
-    gdt_segments_init_and_load();
-
-    //print("Init kheap\n");
-
+    gdt_init();
     idt_init();
     //print("Setup interrupts\n");
 
