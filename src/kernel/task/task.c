@@ -85,6 +85,8 @@ union task *task_new(struct process *process, int privileged, uintptr_t entry_po
                 .cs = cs,
             },
             .kernel_stack_pointer = (uintptr_t)&task->kstack[TASK_KERNEL_STACK_SIZE],
+            .sp = (uintptr_t)&task->kstack[TASK_KERNEL_STACK_SIZE],
+            .ip = entry_point,
             .next = NULL,
             .previous = NULL,
             .process = process,
@@ -133,22 +135,82 @@ void task_push_state_to_kstack(union task *task)
     task_push_data_to_kstack(task, &interrupt_frame, interrupt_frame_size);
 }
 
-void switch_task(union task *previous, union task *next)
+#define switch_to(prev, next, last)					\
+do {									\
+	/*								\
+	 * Context-switching clobbers all registers, so we clobber	\
+	 * them explicitly, via unused output variables.		\
+	 * (EAX and EBP is not listed because EBP is saved/restored	\
+	 * explicitly for wchan access and EAX is the return value of	\
+	 * __switch_to())						\
+	 */								\
+	unsigned long ebx, ecx, edx, esi, edi; \
+									\
+	asm volatile( \
+             "pushfl\n\t"		/* save    flags */	\
+		     "pushl %%ebp\n\t"		/* save    EBP   */	\
+		     "movl %%esp,%[prev_sp]\n\t"	/* save    ESP   */ \
+             "movl $1f,%[prev_ip]\n\t"	/* save    EIP   */	\
+		     "movl %[next_sp],%%esp\n\t"	/* restore ESP   */ \
+		     "pushl %[next_ip]\n\t"	/* restore EIP   */	\
+		     "jmp __switch_task\n"	/* regparm call  */	\
+		     "1:\t"						\
+		     "popl %%ebp\n\t"		/* restore EBP   */	\
+		     "popfl\n"			/* restore flags */	\
+		     /* output parameters */				\
+		     : [prev_sp] "=m" (prev->task.sp),		\
+		       [prev_ip] "=m" (prev->task.ip),		\
+		       "=a" (last),					\
+		       /* clobbered output registers: */		\
+		       "=b" (ebx), "=c" (ecx), "=d" (edx),		\
+		       "=S" (esi), "=D" (edi)				\
+		       /* input parameters: */				\
+		     : [next_sp]  "m" (next->task.sp),		\
+		       [next_ip]  "m" (next->task.ip),		\
+		       /* regparm parameters for __switch_to(): */	\
+		       [prev]     "a" (prev),				\
+		       [next]     "d" (next));				\
+} while (0)
+
+#define fastcall  __attribute__((regparm(3)))
+void fastcall __switch_task(union task *previous, union task *next);
+void  fastcall __switch_task(union task *previous, union task *next)
 {
-    (void)next;
-    (void)previous;
+    //(void)next;
+    //(void)previous;
+    //previous->task.n_switches++;
     //asm volatile("cli");
-
-    asm volatile("mov %0, %%cr3" ::"r"(PAGE_ENTRY_ADDR(next->task.process->page_directory->directory[1023])));
-
-    uintptr_t page_directory_addr;
-    asm volatile("mov %%cr3, %0" : "=r"(page_directory_addr));
-    asm volatile("mov %0, %%cr3" : : "r"(page_directory_addr));
 
     tss_set_kernel_stack((uintptr_t)&next->kstack[TASK_KERNEL_STACK_SIZE]);
     tss_load(GDT_TSS_SEGMENT_SELECTOR);
     current_process = next->task.process;
     current_task = next;
+
+    /*
+
+    regparm (number)
+
+    On x86-32 targets, the regparm attribute causes the compiler to pass arguments number one to number if they are of integral type in registers EAX, EDX, and ECX instead of on the stack.
+    Functions that take a variable number of arguments continue to be passed all of their arguments on the stack.
+
+
+    ########################
+
+    https://gcc.gnu.org/onlinedocs/gcc/Machine-Constraints.html#Machine-Constraints
+
+
+    x86 family—config/i386/constraints.md
+        R -> Legacy register—the eight integer registers available on all i386 processors (a, b, c, d, si, di, bp, sp).
+        q -> Any register accessible as rl. In 32-bit mode, a, b, c, and d; in 64-bit mode, any integer register.
+        Q -> Any register accessible as rh: a, b, c, and d.
+        a -> The a register.
+        b -> The b register.
+        c -> The c register.
+        d -> The d register.
+        S -> The si register.
+        D -> The di register.
+    */
+
 }
 
 void task_store(union task *task, struct interrupt_frame *interrupt_frame)
@@ -194,8 +256,15 @@ uintptr_t schedule(struct interrupt_frame *interrupt_frame)
     print(" -> ");
     print(next->task.process->name);
     print_char('\n');
+    tss_set_kernel_stack((uintptr_t)&next->kstack[TASK_KERNEL_STACK_SIZE]);
+    tss_load(GDT_TSS_SEGMENT_SELECTOR);
 
-    switch_task(current_task, next);
+    asm volatile("mov %0, %%cr3" ::"r"(PAGE_ENTRY_ADDR(next->task.process->page_directory->directory[1023])));
+    uintptr_t page_directory_addr;
+    asm volatile("mov %%cr3, %0" : "=r"(page_directory_addr));
+    asm volatile("mov %0, %%cr3" : : "r"(page_directory_addr));
+
+    switch_to(current_task, next, current_task);
 
     return current_task->task.kernel_stack_pointer;
 }

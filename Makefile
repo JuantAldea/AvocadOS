@@ -12,7 +12,7 @@ LINKER_FILES = $(shell find src/ -name "*.ld")
 BOOT_FILES = src/boot/boot.asm src/boot/gdt.inc src/boot/ata_lba_read.inc
 INCLUDES = -Isrc
 
-CFLAGS = -ggdb3 -ffreestanding -nostdlib -m32\
+CFLAGS = -ggdb3 -ffreestanding -nostdlib -m32 -pipe\
 	-falign-jumps -falign-functions -falign-labels -falign-loops \
 	-fstrength-reduce -fno-omit-frame-pointer -finline-functions \
 	-std=gnu11 -O0 -Iinc \
