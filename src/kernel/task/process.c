@@ -1,4 +1,6 @@
+#if 0
 #include "process.h"
+#include "task.h"
 #include "../../config.h"
 #include "../../status.h"
 #include "../../string/string.h"
@@ -7,43 +9,40 @@
 #include "../../fs/file.h"
 #include "../../kernel/panic.h"
 #include "../../memory/paging.h"
-
 #include "../../termio/termio.h"
 
-struct process *idle_process;
+struct process *current_process = NULL;
+static struct process *processes[MAX_PROCESSES] = { 0 };
+extern union task system_task;
 
 void idle_function()
 {
     while (1) {
-        print("IDLE TASK\n");
+        /*
+        for (int i = 0; i < 5; i++) {
+            print("Idle - ");
+            char buffer[100];
+            itoa(i, buffer);
+            print(buffer);
+            print("                         \n");
+        }
+        asm volatile("hlt");
+        */
         asm volatile("hlt");
     }
 }
-
-struct process *current_process = NULL;
-static struct process *processes[MAX_PROCESSES] = { 0 };
 
 struct process *process_current()
 {
     return current_process;
 }
 
-struct process *process_next()
-{
-    return current_process->next;
-}
-
-struct process *process_previous()
-{
-    return current_process->previous;
-}
-
 struct process *process_list_insert(struct process *process)
 {
-    process->previous = current_process->previous;
-    process->next = current_process;
-
-    current_process->previous = process;
+    struct process *system_process = system_task.task.process;
+    process->next = system_process;
+    process->previous = system_process->previous;
+    system_process->previous = process;
     process->previous->next = process;
 
     return process;
@@ -131,54 +130,88 @@ int process_map_memory(struct process *process)
         panic("PROCESS BROKEN");
     }
 
-    if (!process->task) {
-        panic("NO PROCESS TASK");
-    }
+    process->page_directory = paging_clone_directory(&kernel_page_directory);
 
     // map code
-    int res = paging_map_from_to(process->page_directory, (void *)PROGRAM_BASE_VIRT_ADDR, process->memory,
-                                 paging_align_address(process->memory + process->memory_size),
+    uintptr_t physical_code_pointer_begin = virtual_to_physical_addr(current_directory, process->memory);
+    uintptr_t physical_code_pointer_end = paging_align_address(physical_code_pointer_begin + process->memory_size);
+
+    int res = paging_map_from_to(process->page_directory, PROGRAM_BASE_VIRT_ADDR, physical_code_pointer_begin, physical_code_pointer_end,
                                  PAGING_WRITABLE_PAGE | PAGING_ACCESS_FROM_ALL | PAGING_PRESENT);
     if (res) {
         goto out;
     }
 
     // map stack
-    res = paging_map_from_to(process->page_directory, (void *)PROGRAM_STACK_END, process->stack,
-                             paging_align_address(process->stack + PROGRAM_STACK_SIZE),
+    uintptr_t physical_stack_pointer_begin = virtual_to_physical_addr(current_directory, process->stack);
+    uintptr_t physical_stack_pointer_end = paging_align_address(physical_stack_pointer_begin + PROGRAM_STACK_SIZE);
+
+    res = paging_map_from_to(process->page_directory, PROGRAM_STACK_TOP_VIRT_ADDR, physical_stack_pointer_begin, physical_stack_pointer_end,
                              PAGING_PRESENT | PAGING_ACCESS_FROM_ALL | PAGING_WRITABLE_PAGE);
     if (res) {
         goto out;
     }
 
-    if (res) {
-        goto out;
-    }
 out:
     return res;
 }
 
-void process_init_process_stack(struct process *process)
+void init_system_process()
 {
-    struct isr_data isr_data;
-    //task_fill_isr_frame(process->task, &isr_data);
-    memcpy(&(((uint8_t *)(process->stack))[PROGRAM_STACK_SIZE - 1]) - sizeof(isr_data), &isr_data, sizeof(isr_data)); //NOLINT
+    /*
+        The first step of interruption handling is saving the processor state into current_task's kernel stack.
+        We will get leverage from that by setting the kernel stack, defined at kernel.asm, as the stack of the
+        current_task, by doing so, after triggering an interrupt, the processor will save its state into the
+        aforementioned stack
+    */
+    struct process *process = kzalloc(sizeof(struct process));
+    process->pid = 0;
+    process->memory_size = 0;
+    process->memory = (void *)KERNEL_VIRTUAL_BASE;
+    strncpy(process->name, "System Process", sizeof(process->name)); //NOLINT
+    process->page_directory = &kernel_page_directory;
+    process->task = &system_task;
+    process->next = process;
+    process->previous = process;
+
+    // cs won't be stored by the first schedule() as there won't be a ring change
+    system_task.task.registers.segments.ss = GDT_KERNEL_DATA_SEGMENT_SELECTOR;
+    system_task.task.process = process;
+
+    system_task.task.next = &system_task;
+    system_task.task.previous = &system_task;
+
+    current_process = process;
+    current_task = process->task;
+
+    processes[process->pid] = process;
+
+    raise_int_0x20();
 }
 
 void init_idle_process()
 {
-    void *memory;
-    uint32_t memory_size;
-    process_load_binary("0:/TRAP.BIN", &memory, &memory_size);
-    process_init("Idle Process", memory, memory_size, 0, 0, &processes[0]);
-    processes[0]->stack = kzalloc(PROGRAM_STACK_SIZE);
-    processes[0]->task = task_init_idle_task(processes[0]);
-    process_map_memory(processes[0]);
-    process_init_process_stack(processes[0]);
+    struct process *process = kzalloc(sizeof(struct process));
 
-    processes[0]->next = processes[0];
-    processes[0]->previous = processes[0];
-    current_process = processes[0];
+    process->pid = 1;
+    process->memory_size = 0;
+    process->memory = (void *)KERNEL_VIRTUAL_BASE;
+
+    strncpy(process->name, "Idle Process", sizeof(process->name)); //NOLINT
+    process->page_directory = &kernel_page_directory;
+    process->stack = kzalloc(PROGRAM_STACK_SIZE);
+
+    process->task = task_new(process, 1, (uintptr_t)&idle_function, (uintptr_t)(((char *)process->stack)[PROGRAM_STACK_SIZE]));
+
+    processes[process->pid] = process;
+    process_list_insert(process);
+}
+
+void tasking_init()
+{
+    init_system_process();
+    init_idle_process();
+    process_load("0:/TRAP.BIN");
 }
 
 int process_init(const char *name, void *memory, uint32_t memory_size, int privileged, int slot, struct process **process)
@@ -192,27 +225,22 @@ int process_init(const char *name, void *memory, uint32_t memory_size, int privi
         return -ENOMEM;
     }
 
-    _process->page_directory = paging_init_4gb_directory(PAGING_PRESENT | PAGING_ACCESS_FROM_ALL);
-
-    if (!_process->page_directory) {
-        res = -ENOMEM;
-        goto out;
-    }
-
     _process->pid = slot;
     _process->memory_size = memory_size;
     _process->memory = memory;
 
-    _process->stack = kzalloc(PROGRAM_STACK_SIZE);
-
-    if (!_process->stack) {
+    if (!(_process->stack = kzalloc(PROGRAM_STACK_SIZE))) {
         res = -EINVAL;
+        goto out;
+    }
+
+    if ((res = process_map_memory(_process))) {
         goto out;
     }
 
     strncpy(_process->name, name, sizeof(_process->name)); //NOLINT
 
-    _process->task = task_new(_process, privileged);
+    _process->task = task_new(_process, privileged, PROGRAM_BASE_VIRT_ADDR, PROGRAM_STACK_TOP_VIRT_ADDR + PROGRAM_STACK_SIZE);
 
     if (!_process->task) {
         res = -ENOMEM;
@@ -220,11 +248,11 @@ int process_init(const char *name, void *memory, uint32_t memory_size, int privi
     }
 
     // handle error in task
-
-    res = process_map_memory(_process);
     if (res) {
         goto out;
     }
+
+    process_list_insert(_process);
 
 out:
     if (IS_ERROR(res)) {
@@ -238,7 +266,7 @@ out:
             }
 
             if (_process->page_directory) {
-                paging_free_4gb_directory(_process->page_directory);
+                //paging_free_4gb_directory(_process->page_directory);
             }
 
             if (_process->task) {
@@ -268,11 +296,16 @@ int process_load(const char *filename)
 
     void *memory;
     uint32_t memory_size;
+
     process_load_binary(filename, &memory, &memory_size);
-    return process_init("Idle Process", memory, memory_size, 1, slot_found, &processes[slot_found]);
+    return process_init(filename, memory, memory_size, 0, slot_found, &processes[slot_found]);
 }
 
+/*
 void process_switch_directory(struct process *process)
 {
     paging_switch_directory(process->page_directory);
 }
+*/
+
+#endif

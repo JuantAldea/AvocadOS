@@ -51,8 +51,8 @@ void __attribute__((noreturn)) kernel_main()
 {
     terminal_init();
 
-    kheap_init(&_kernel_end);
-    paging_init(KERNEL_HEAP_SIZE);
+    kheap_init();
+    paging_init();
 
     kernel_splash();
 

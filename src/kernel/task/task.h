@@ -1,6 +1,6 @@
 #ifndef __TASK_H__
 #define __TASK_H__
-
+#if 0
 #include "../../cpu.h"
 #include "../../idt/idt.h"
 #include "../../memory/paging.h"
@@ -41,4 +41,5 @@ void task_save_current_task(struct isr_data *isr_data);
 void schedule(void);
 void task_store(struct isr_data *isr_data);
 
+#endif
 #endif

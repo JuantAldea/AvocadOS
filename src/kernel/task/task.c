@@ -1,3 +1,4 @@
+#if 0
 #include "task.h"
 #include "../../string/string.h"
 #include "../../memory/paging.h"
@@ -199,3 +200,4 @@ void schedule(void)
         //switch_task(next);
     }
 }
+#endif
