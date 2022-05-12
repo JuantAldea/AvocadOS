@@ -16,11 +16,14 @@ BOOT_PAGE_DIRECTORY:
     dd 0x00000083
     times (1024 - KERNEL_BASE_PAGE_NUMBER - 1) dd 0
 
-section .bss
-align 4
-stack_top:
-    resb 104856
-stack_bottom:
+section .data
+align 4096
+; will store kernel's system task (union task *system_task = &system_task_addr;)
+; TODO use linker script instead of this
+global system_task
+global system_task_stack_bottom
+system_task times 4096 dd 0xDEADC0DE
+system_task_stack_bottom:
 
 section .text
 global kernel_trampoline_low
@@ -41,11 +44,8 @@ kernel_trampoline:
     jmp ecx
 
 higher_half:
-    mov esp, stack_bottom
+    mov esp, system_task_stack_bottom
     xor ebp, ebp
-
-    ;mov esp, ebp
-
     call remap_master_pic
 
     extern kernel_main

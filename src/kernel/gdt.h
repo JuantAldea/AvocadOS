@@ -5,11 +5,11 @@
 #include "../config.h"
 
 struct gdt_native {
-    uint16_t segment;
+    uint16_t limit_low;
     uint16_t base_addr_0_15_bits;
     uint8_t base_addr_16_23_bits;
     uint8_t access;
-    uint8_t high_low_4_bit_flags;
+    uint8_t limit_high_4_flags_4;
     uint8_t base_addr_24_31_bits;
 } __attribute__((packed));
 
@@ -18,6 +18,11 @@ struct gdt_structure {
     uint32_t limit;
     uint8_t type;
 };
+
+struct gdt_pointer_t {
+	uint16_t limit;
+	uintptr_t base;
+} __attribute__((packed)) ;
 
 struct tss {
     uint32_t link;
@@ -52,6 +57,6 @@ extern struct gdt_structure gdt_segments[GDT_SEGMENTS];
 extern struct tss tss;
 extern void tss_load(int tss_segment);
 void gdt_init();
-void tss_set_kernel_stack(uintptr_t kernel_stack_pointer);
+void tss_set_kernel_stack(uintptr_t kernel_stack_pointer, uintptr_t kss);
 
 #endif

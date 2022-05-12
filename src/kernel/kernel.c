@@ -58,11 +58,11 @@ void __attribute__((noreturn)) kernel_main()
 
     gdt_init();
     idt_init();
-    //print("Setup interrupts\n");
 
-    tss.esp0 = 0x600000;
-    tss.ss0 = GDT_KERNEL_DATA_SEGMENT_SELECTOR;
-    tss_load(sizeof(struct gdt_native) * 5);
+
+    //tss.esp0 = 0x600000;
+    //tss.ss0 = GDT_KERNEL_DATA_SEGMENT_SELECTOR;
+    //tss_load(GDT_TSS_SEGMENT_SELECTOR);
 
     file_table_init();
     fs_init();
