@@ -6,6 +6,8 @@
 
 #define BUSY_BIT 0x80
 #define DRQ_BIT  0x08
+#define ERR_BIT  0x01
+#define DF_BIT  0x20
 #define DISK_TYPE_PHYSICAL 0
 #define DISK_SECTOR_SIZE 512
 #define ATA_MASTER 0xE0
