@@ -4,9 +4,17 @@ romimage:        file=/usr/share/bochs/BIOS-bochs-latest
 vgaromimage:     file=/usr/share/bochs/VGABIOS-lgpl-latest
 boot:            disk
 ata0-master:     type=disk, mode=flat, path="bin/image.bin"
-log:             bochslog.txt
+log: bochsout.txt
+debug: action=report, pci=report, pic=report, XGUI=ignore, siminterface=ignore, memory=ignore, harddrv=ignore, pit=ignore, keyboard=ignore, pit82c54=ignore
+info: action=report, pic=report
+error: action=report, pic=report
+debugger_log: bochsdbg.txt
 clock:           sync=realtime, time0=local
-cpu:             count=1, ips=1000000
-#gdbstub: enabled=1, port=1234, text_base=0, data_base=0, bss_base=0
-magic_break: enabled=1
+cpu:             count=1, ips=1000000, reset_on_triple_fault=0
+
+debug_symbols: file=kernel.sym
+debug_symbols: file=boot.sym
+
+#gdbstub: enabled=0, port=1234, text_base=0, data_base=0, bss_base=0
+magic_break: enabled=0
 port_e9_hack: enabled=1

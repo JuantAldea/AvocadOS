@@ -116,18 +116,35 @@ run_qemu: all
 
 run_bochs: all
 	rm -f $(TARGET).lock
+	nm build/kernel/kernel.elf | grep -i -e " T " | awk '{ print $$1" "$$3 }' > kernel.sym
+	nm build/boot/boot.elf | grep -i -e " T " | awk '{ print $$1" "$$3 }' > boot.sym
 	$(BOCHS_RUN_COMMAND)
 
 
 gdb: all
 	gdb -tui \
 	-ex "set confirm off" \
-	-ex "add-symbol-file build/boot/boot.elf 0x7c00 " \
-	-ex "add-symbol-file build/kernel/kernel.elf 0x0100000 " \
-	-ex "add-symbol-file build/kernel/kernel.elf 0xc0100000 " \
+	-ex "add-symbol-file build/boot/boot.elf 0x7c00" \
+	-ex "add-symbol-file build/kernel/kernel.elf 0x0100000" \
+	-ex "add-symbol-file build/kernel/kernel.elf 0xc0100000" \
 	-ex "target remote | $(QEMU_RUN_COMMAND) -S -gdb stdio" \
-	-ex "break kernel_main"
+	-ex "break kernel_main" \
+	-ex "set logging enabled"
 
+gdb2: all
+	gdb -tui -ex "set confirm off" -ex "add-symbol-file build/boot/boot.elf 0x7c00" -ex "add-symbol-file build/kernel/kernel.elf 0x0100000" -ex "add-symbol-file build/kernel/kernel.elf 0xc0100000"  -ex "target remote localhost:1234"  -ex "break kernel_main"
+
+qemu_gdb: all
+	$(QEMU_RUN_COMMAND) -s -S -trace events=events.qemu
+
+gdbgui: all
+	gdbgui --gdb-cmd '-tui\
+	-ex "set confirm off" \
+	-ex "add-symbol-file build/boot/boot.elf 0x7c00" \
+	-ex "add-symbol-file build/kernel/kernel.elf 0x00100000" \
+	-ex "add-symbol-file build/kernel/kernel.elf 0xc0100000" \
+	-ex "target remote localhost:1234" \
+	-ex "break kernel_main"'
 
 
 clean: programs_clean
