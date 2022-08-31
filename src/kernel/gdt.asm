@@ -1,22 +1,16 @@
 section .text
-global gdt_load
-
+global gdt_load:function
+extern GDT_PTR
 gdt_load:
-    push ebp
-    mov ebp, esp
-
-    mov eax, [ebp + 8]
-    mov [gdt_descriptor + 2], eax
-    mov ax, [ebp + 12]
-    mov [gdt_descriptor], ax
-    lgdt [gdt_descriptor]
-
-    mov	esp, ebp
-    pop ebp
-    ret
-
-section .data
-
-gdt_descriptor:
-    dw 0x00 ; size
-    dd 0x00 ; gdt ptr
+	; Load the GDT
+	lgdt [GDT_PTR]
+	; Flush the values to 0x10
+	mov ax, 0x10
+	mov ds, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
+	mov ss, ax
+	jmp 0x08:flush2
+flush2:
+	ret
