@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
-
+#include "../config.h"
 // clang-format off
 
 #define PAGING_CACHE_DISABLE     16 //0b00010000
