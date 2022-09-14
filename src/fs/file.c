@@ -51,7 +51,7 @@ enum fopen_mode file_mode_from_string(const char *str)
     return OPEN_MODE_INVALID;
 }
 
-struct FILE* fopen(const char *const filename, const char *str_mode)
+struct FILE *fopen(const char *const filename, const char *str_mode)
 {
     enum fopen_mode mode = file_mode_from_string(str_mode);
 

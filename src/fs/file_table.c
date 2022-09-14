@@ -54,11 +54,9 @@ int file_table_close_file(struct FILE *descriptor)
 
 struct FILE *file_table_get_descriptor(int fd)
 {
-
     if (fd < 0 || fd >= file_table.table_len) {
         return NULL;
     }
 
     return file_table.table[fd];
-
 }
