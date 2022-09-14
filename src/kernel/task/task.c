@@ -13,6 +13,17 @@
 //extern void process_switch_directory(struct process *process);
 
 union task *current_task;
+void print_tasks()
+{
+    union task *ptr = current_task;
+    print("TASK LIST\n");
+    do {
+        print(ptr->task.process->name);
+        print("\n");
+        ptr = ptr->task.next;
+    } while (ptr != current_task);
+    print("##########\n");
+}
 
 //static int _task_init(union task *task, struct process *process, int privileged);
 
@@ -33,11 +44,15 @@ union task *task_previous()
 
 union task *task_list_insert(union task *task)
 {
-    task->task.previous = current_task->task.previous;
-    task->task.next = current_task;
-    current_task->task.previous = task;
-    task->task.previous->task.next = task;
+    task->task.previous = current_task;
+    task->task.next = current_task->task.next;
+    current_task->task.next = task;
+    task->task.next->task.previous = task;
 
+    print(current_task->task.process->name);
+    print("\n");
+    print(task->task.process->name);
+    print_tasks();
     return task;
 }
 
@@ -182,7 +197,6 @@ void  fastcall __switch_task(union task *previous, union task *next)
     //asm volatile("cli");
 
     tss_set_kernel_stack((uintptr_t)&next->kstack[TASK_KERNEL_STACK_SIZE]);
-    tss_load(GDT_TSS_SEGMENT_SELECTOR);
     current_process = next->task.process;
     current_task = next;
 
@@ -210,7 +224,6 @@ void  fastcall __switch_task(union task *previous, union task *next)
         S -> The si register.
         D -> The di register.
     */
-
 }
 
 void task_store(union task *task, struct interrupt_frame *interrupt_frame)
@@ -221,6 +234,7 @@ void task_store(union task *task, struct interrupt_frame *interrupt_frame)
 
     task->task.kernel_stack_pointer = (uintptr_t)interrupt_frame;
 
+    /*
     if (interrupt_frame->cs & 0x3) {
         //context change
         task->task.registers.segments.ss = interrupt_frame->ss;
@@ -235,6 +249,7 @@ void task_store(union task *task, struct interrupt_frame *interrupt_frame)
     task->task.registers.segments.fs = interrupt_frame->fs;
     task->task.registers.segments.es = interrupt_frame->es;
     task->task.registers.segments.ds = interrupt_frame->ds;
+    */
 }
 
 uintptr_t schedule(struct interrupt_frame *interrupt_frame)
@@ -247,24 +262,26 @@ uintptr_t schedule(struct interrupt_frame *interrupt_frame)
 
     union task *next = task_next();
 
-    /*
     if (next == current_task) {
-        return;
+        return (uintptr_t)interrupt_frame;
     }
-    */
+
     print(current_task->task.process->name);
     print(" -> ");
     print(next->task.process->name);
     print_char('\n');
+
+    current_task->task.n_switches++;
+    current_task = next;
+
     tss_set_kernel_stack((uintptr_t)&next->kstack[TASK_KERNEL_STACK_SIZE]);
-    tss_load(GDT_TSS_SEGMENT_SELECTOR);
 
     asm volatile("mov %0, %%cr3" ::"r"(PAGE_ENTRY_ADDR(next->task.process->page_directory->directory[1023])));
     uintptr_t page_directory_addr;
     asm volatile("mov %%cr3, %0" : "=r"(page_directory_addr));
     asm volatile("mov %0, %%cr3" : : "r"(page_directory_addr));
 
-    switch_to(current_task, next, current_task);
+    //switch_to(current_task, next, current_task);
 
     return current_task->task.kernel_stack_pointer;
 }

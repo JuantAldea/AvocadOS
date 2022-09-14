@@ -21,7 +21,8 @@ void remap_master_pic_C(void)
 {
     // https://pdos.csail.mit.edu/6.828/2018/readings/hardware/8259A.pdf
     // https://wiki.osdev.org/PIC#Protected_Mode
-
+    //unsigned char a1 = insb(PIC1_DATA_PORT);                        // save masks
+    //unsigned char a2 = insb(PIC2_DATA_PORT);
     //ICW1
     outb(PIC1_CMD_PORT, PIC_ICW1_INIT | PIC_ICW1_ICW4);
     io_delay();
@@ -34,7 +35,7 @@ void remap_master_pic_C(void)
         (IRQs 0..0xF -> INT 0x20..0x2F).
         For that, we need to set the master PIC's
         base for PIC1 ->0x20
-        base for PIC1 ->0x28
+        base for PIC2 ->0x28
     */
     outb(PIC1_DATA_PORT, 0x20);
     io_delay();
@@ -52,6 +53,11 @@ void remap_master_pic_C(void)
     io_delay();
     outb(PIC2_DATA_PORT, PIC_ICW4_8086_MODE);
     io_delay();
+    outb(PIC1_DATA_PORT, 0x0);
+    outb(PIC2_DATA_PORT, 0x0);
+
+    //outb(PIC1_DATA_PORT, a1);   // restore saved masks.
+    //outb(PIC2_DATA_PORT, a2);
 
     return;
 }
@@ -84,11 +90,17 @@ void print_path(struct path_root *path)
     }
 }
 
+void system_function()
+{
+    asm volatile("nop");
+}
+
 void __attribute__((noreturn)) kernel_main()
 {
     remap_master_pic_C();
+    gdt_init();
+    idt_init();
     terminal_init();
-
     kheap_init();
 
     paging_init();
@@ -97,16 +109,12 @@ void __attribute__((noreturn)) kernel_main()
 
     kernel_splash();
 
-    gdt_init();
-    idt_init();
-
     file_table_init();
     fs_init();
     disk_init();
     tasking_init();
 
-    enable_interrupts();
-
+    /*
     print("\n\nContents of ");
     char path[] = "0:/MOTD.TXT";
     print(path);
@@ -118,9 +126,6 @@ void __attribute__((noreturn)) kernel_main()
     }
 
     //char buffer[65536] = { 0 };
-    struct stat file_info;
-    fstat(des->fileno, &file_info);
-
     char *buffer = kzalloc(file_info.st_size);
 
     int read = fread(buffer, 1, file_info.st_size, des);
@@ -133,6 +138,8 @@ void __attribute__((noreturn)) kernel_main()
     print(buffer);
     //char buffer2[65536] = { 0 };
     //(void) buffer2;
+
+    */
     /*
     //print_tasks();
 
@@ -199,6 +206,9 @@ end:
         print("                         \n");
     }
     */
+    while (1) {
+        system_function();
+    }
     asm volatile("hlt");
 
     goto end;
