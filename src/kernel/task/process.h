@@ -7,7 +7,7 @@
 
 struct task_control_block {
     struct process_state registers;
-    //uint32_t n_switches;
+    uint32_t n_switches;
     uintptr_t sp;
     uintptr_t ip;
     struct process *process;

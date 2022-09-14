@@ -13,21 +13,15 @@
 struct process *current_process = NULL;
 static struct process *processes[MAX_PROCESSES] = { 0 };
 extern union task system_task;
-
+void nothing_idle()
+{
+    asm volatile("nop");
+}
 void idle_function()
 {
     while (1) {
-        /*
-        for (int i = 0; i < 5; i++) {
-            print("Idle - ");
-            char buffer[100];
-            itoa(i, buffer);
-            print(buffer);
-            print("                         \n");
-        }
-        asm volatile("hlt");
-        */
-        asm volatile("hlt");
+        nothing_idle();
+        //asm volatile("hlt");
     }
 }
 
@@ -185,7 +179,7 @@ void init_system_process()
 
     processes[process->pid] = process;
 
-    raise_int_0x20();
+    raise_int_20();
 }
 
 void init_idle_process()
@@ -209,8 +203,13 @@ void init_idle_process()
 void tasking_init()
 {
     init_system_process();
+    enable_interrupts();
+    //asm volatile("sti");
+    //while(1){
+
+    //}
     init_idle_process();
-    process_load("0:/TRAP.BIN");
+    //process_load("0:/TRAP.BIN");
 }
 
 int process_init(const char *name, void *memory, uint32_t memory_size, int privileged, int slot, struct process **process)

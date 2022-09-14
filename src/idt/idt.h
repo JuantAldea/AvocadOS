@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 #include "../cpu.h"
+extern void (*raise_int_table[])();
+
+#define INTGATE 0x8E
+#define TRAPGATE 0xEF
 
 struct idt_desc {
     uint16_t offset_1; // offset bits 0-15
@@ -45,13 +49,14 @@ struct process_state {
 } __attribute__((packed));
 
 void idt_init();
-void enable_interrupts();
-void disable_interrupts();
-extern void raise_int_0x0();
-extern void raise_int_0x1();
-extern void raise_int_0x2();
-extern void raise_int_0x3();
-extern void raise_int_0x20();
-extern void raise_int_0x21();
+extern void enable_interrupts();
+extern void disable_interrupts();
+extern void raise_int_0();
+extern void raise_int_1();
+extern void raise_int_2();
+extern void raise_int_3();
+extern void raise_int_32();
+extern void raise_int_20();
+extern void raise_int_33();
 
 #endif /* __IDT_H*/
