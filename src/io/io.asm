@@ -65,8 +65,9 @@ outw:
 
 
 io_delay:
-	nop
-	nop
-	nop
-	nop
+    %assign i 0
+	%rep 16
+    nop
+    %assign i i+1
+    %endrep
 	ret
