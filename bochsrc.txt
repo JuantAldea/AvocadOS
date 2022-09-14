@@ -5,9 +5,9 @@ vgaromimage:     file=/usr/share/bochs/VGABIOS-lgpl-latest
 boot:            disk
 ata0-master:     type=disk, mode=flat, path="bin/image.bin"
 log: bochsout.txt
-debug: action=report, pci=report, pic=report, XGUI=ignore, siminterface=ignore, memory=ignore, harddrv=ignore, pit=ignore, keyboard=ignore, pit82c54=ignore
-info: action=report, pic=report
-error: action=report, pic=report
+debug: action=report, pci=ignore, pic=ignore, XGUI=ignore, siminterface=ignore, memory=ignore, harddrv=ignore, pit=ignore, keyboard=ignore, pit82c54=ignore, dma=ignore
+info: action=report, pic=report, harddrv=report, dma=ignore, pci=ignore
+error: action=report, pic=report, harddrv=report, dma=ignore, pci=ignore
 debugger_log: bochsdbg.txt
 clock:           sync=realtime, time0=local
 cpu:             count=1, ips=1000000, reset_on_triple_fault=0
